@@ -4,7 +4,6 @@ import Layout from "../components/Layout";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
-
 type Post = {
   slug: string;
   title: string;
@@ -50,7 +49,9 @@ export default function WritingPost() {
         <div className="space-y-2">
           <p className="text-neutral-500">Couldn’t load the post from the server.</p>
           <p className="text-sm text-neutral-500">
-            Make sure <span className="font-mono">http://localhost:8000/api/writing</span> loads JSON.
+            Make sure{" "}
+            <span className="font-mono">{API_BASE}/api/writing</span>{" "}
+            loads JSON.
           </p>
           <Link to="/writing" className="text-sm underline">
             Back to Writing
@@ -75,7 +76,7 @@ export default function WritingPost() {
           </header>
 
           <div
-            className="prose prose-neutral prose-lg leading-relaxed dark:prose-invert max-w-none"
+            className="prose prose-lg prose-neutral max-w-none leading-relaxed dark:prose-invert"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
         </article>

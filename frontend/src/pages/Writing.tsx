@@ -20,7 +20,7 @@ export default function Writing() {
   useEffect(() => {
     setStatus("loading");
 
-    fetch(`${API_BASE}/api/profile`)
+    fetch(`${API_BASE}/api/writing`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
@@ -52,7 +52,7 @@ export default function Writing() {
             <p className="text-sm text-neutral-500">
               Make sure{" "}
               <span className="font-mono">
-                http://localhost:8000/api/writing
+                {API_BASE}/api/writing
               </span>{" "}
               loads JSON.
             </p>
@@ -62,22 +62,26 @@ export default function Writing() {
         {status === "ready" && (
           <div className="space-y-10">
             {posts.map((post) => (
-<article key={post.slug} className="group">
-  <h2 className="text-xl font-medium">
-    <Link to={`/writing/${post.slug}`} className="hover:underline">
-      {post.title}
-    </Link>
-  </h2>
+              <article key={post.slug} className="group">
+                <h2 className="text-xl font-medium">
+                  <Link
+                    to={`/writing/${post.slug}`}
+                    className="hover:underline"
+                  >
+                    {post.title}
+                  </Link>
+                </h2>
 
-  <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">{post.date}</p>
+                <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">
+                  {post.date}
+                </p>
 
-  <p className="mt-4 text-gray-700 dark:text-neutral-300 leading-relaxed">
-    {post.summary}
-  </p>
+                <p className="mt-4 leading-relaxed text-gray-700 dark:text-neutral-300">
+                  {post.summary}
+                </p>
 
-  <div className="mt-8 h-px w-full bg-neutral-200 dark:bg-neutral-800" />
-</article>
-
+                <div className="mt-8 h-px w-full bg-neutral-200 dark:bg-neutral-800" />
+              </article>
             ))}
           </div>
         )}
