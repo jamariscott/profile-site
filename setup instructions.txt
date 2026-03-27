@@ -1,0 +1,8 @@
+cd C:\root\sites\profile-site\backend
+venv\Scripts\activate
+uvicorn main:app --reload
+http://localhost:8000/api/profile
+
+cd C:\root\sites\profile-site\frontend
+npm run dev
+http://localhost:5173

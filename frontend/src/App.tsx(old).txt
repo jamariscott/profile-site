@@ -1,0 +1,72 @@
+import { useEffect, useState } from "react";
+
+type Profile = {
+  name: string;
+  tagline: string;
+  bio: string;
+  skills: string[];
+};
+
+function App() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/profile")
+      .then(res => res.json())
+      .then(setProfile);
+  }, []);
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Loading…
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-50 text-neutral-900">
+      <main className="max-w-3xl mx-auto px-6 py-20">
+        {/* Header */}
+        <header className="mb-12">
+          <h1 className="text-4xl font-semibold tracking-tight">
+            {profile.name}
+          </h1>
+          <p className="mt-2 text-lg text-neutral-600">
+            {profile.tagline}
+          </p>
+        </header>
+
+        {/* Bio */}
+        <section className="mb-12">
+          <p className="text-neutral-700 leading-relaxed">
+            {profile.bio}
+          </p>
+        </section>
+
+        {/* Skills */}
+        <section className="mb-12">
+          <h2 className="text-sm uppercase tracking-wider text-neutral-500 mb-4">
+            Focus Areas
+          </h2>
+          <ul className="flex flex-wrap gap-3">
+            {profile.skills.map(skill => (
+              <li
+                key={skill}
+                className="px-3 py-1 text-sm bg-neutral-200 rounded-full"
+              >
+                {skill}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Footer / Links placeholder */}
+        <footer className="pt-12 border-t text-sm text-neutral-500">
+          <p>Projects and links coming next.</p>
+        </footer>
+      </main>
+    </div>
+  );
+}
+export default App;
