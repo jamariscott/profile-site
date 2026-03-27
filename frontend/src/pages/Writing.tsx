@@ -16,6 +16,7 @@ type Post = {
 export default function Writing() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [errorText, setErrorText] = useState<string>("");
 
   useEffect(() => {
     setStatus("loading");
@@ -27,12 +28,16 @@ export default function Writing() {
         }
         return res.json();
       })
-      .then((data: Post[]) => {
+      .then((data) => {
+        if (!Array.isArray(data)) {
+          throw new Error(`Expected array from /api/writing, got ${typeof data}`);
+        }
         setPosts(data);
         setStatus("ready");
       })
       .catch((err) => {
         console.error("Writing list fetch failed:", err);
+        setErrorText(String(err));
         setStatus("error");
       });
   }, []);
@@ -51,11 +56,14 @@ export default function Writing() {
             </p>
             <p className="text-sm text-neutral-500">
               Make sure{" "}
-              <span className="font-mono">
-                {API_BASE}/api/writing
-              </span>{" "}
-              loads JSON.
+              <span className="font-mono">{API_BASE}/api/writing</span>{" "}
+              returns a JSON array.
             </p>
+            {errorText && (
+              <pre className="mt-4 whitespace-pre-wrap rounded border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
+                {errorText}
+              </pre>
+            )}
           </div>
         )}
 
