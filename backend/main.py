@@ -9,8 +9,10 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-	"http://localhost:5173",
-	"https://profile-site-navy.vercel.app"
+	"https://timezoftoday.com",
+        "https://www.timezoftoday.com",
+        "http://localhost:5173",   # for local dev
+        "http://localhost:3000"
     ],
     allow_credentials=True,
     allow_methods=["*"],
