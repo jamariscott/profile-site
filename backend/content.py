@@ -43,3 +43,15 @@ LINKS = [
         "note": "Prototypes and systems",
     },
 ]
+
+videos = [
+    {
+        "id": 1,
+        "title": "Your First Video Title",
+        "description": "Short description of what this video is about.",
+        "youtube_id": "dQw4w9wgccc",          # just the YouTube ID, not the full URL
+        "date": "2026-04-01",
+        "duration": "12:34"
+    },
+    # add more videos here...
+]

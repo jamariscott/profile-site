@@ -8,6 +8,8 @@ import Card from "./components/Card";
 import Writing from "./pages/Writing";
 import WritingPost from "./pages/WritingPost";
 
+import Videos from './pages/Videos';
+
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 type Profile = {
@@ -156,6 +158,7 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/writing" element={<Writing />} />
       <Route path="/writing/:slug" element={<WritingPost />} />
+      <Route path="/videos" element={<Videos />} />
     </Routes>
   );
 }
