@@ -2,4 +2,5 @@ fastapi
 uvicorn
 python-frontmatter
 markdown
+sqlalchemy
 python-dotenv
