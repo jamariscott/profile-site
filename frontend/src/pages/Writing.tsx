@@ -1,99 +1,81 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import Layout from "../components/Layout";
-import Section from "../components/Section";
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-
-type Post = {
-  slug: string;
-  title: string;
-  date: string;
-  summary: string;
-  content: string;
-};
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { API_BASE } from '../lib/config';
 
 export default function Writing() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [errorText, setErrorText] = useState<string>("");
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      console.log("🔄 Fetching from:", `${API_BASE}/api/writing`); // debug
+
+      const res = await fetch(`${API_BASE}/api/writing`, { cache: 'no-store' });
+
+      if (!res.ok) throw new Error('Failed to fetch');
+
+      const data = await res.json();
+      console.log("📥 Received", data.length, "articles from database");
+
+      setPosts(data);
+      setLastUpdated(new Date().toLocaleTimeString());
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setStatus("loading");
+    fetchPosts();
 
-    fetch(`${API_BASE}/api/writing`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (!Array.isArray(data)) {
-          throw new Error(`Expected array from /api/writing, got ${typeof data}`);
-        }
-        setPosts(data);
-        setStatus("ready");
-      })
-      .catch((err) => {
-        console.error("Writing list fetch failed:", err);
-        setErrorText(String(err));
-        setStatus("error");
-      });
+    // Auto-refresh every 8 seconds
+    const interval = setInterval(fetchPosts, 8000);
+
+    return () => clearInterval(interval);
   }, []);
 
+  if (loading && posts.length === 0) {
+    return <div className="max-w-4xl mx-auto p-8">Loading articles...</div>;
+  }
+
   return (
-    <Layout>
-      <Section title="Writing">
-        {status === "loading" && (
-          <p className="text-neutral-500">Loading…</p>
-        )}
+    <div className="max-w-4xl mx-auto px-6 py-12 bg-white min-h-screen">
+      <div className="flex justify-between items-baseline mb-10">
+        <h1 className="text-5xl font-bold text-zinc-900">Writing</h1>
 
-        {status === "error" && (
-          <div className="space-y-2">
-            <p className="text-neutral-500">
-              Couldn’t load writing from the server.
-            </p>
-            <p className="text-sm text-neutral-500">
-              Make sure{" "}
-              <span className="font-mono">{API_BASE}/api/writing</span>{" "}
-              returns a JSON array.
-            </p>
-            {errorText && (
-              <pre className="mt-4 whitespace-pre-wrap rounded border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
-                {errorText}
-              </pre>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={fetchPosts}
+            className="flex items-center gap-2 px-5 py-2 bg-white border border-zinc-200 hover:border-zinc-300 rounded-3xl text-sm transition-colors"
+          >
+            ↻ Refresh
+          </button>
+          <span className="text-xs text-zinc-400">Updated {lastUpdated}</span>
+        </div>
+      </div>
 
-        {status === "ready" && (
-          <div className="space-y-10">
-            {posts.map((post) => (
-              <article key={post.slug} className="group">
-                <h2 className="text-xl font-medium">
-                  <Link
-                    to={`/writing/${post.slug}`}
-                    className="hover:underline"
-                  >
-                    {post.title}
-                  </Link>
+      <div className="space-y-12">
+        {posts.length === 0 ? (
+          <p className="text-zinc-400 text-center py-12">No articles yet.</p>
+        ) : (
+          posts.map((post) => (
+            <div key={post.slug} className="border border-zinc-200 rounded-3xl p-8 hover:shadow-md transition-shadow">
+              <Link to={`/writing/${post.slug}`} className="block group">
+                <h2 className="text-3xl font-semibold text-zinc-900 group-hover:text-blue-600 transition-colors">
+                  {post.title}
                 </h2>
-
-                <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">
-                  {post.date}
-                </p>
-
-                <p className="mt-4 leading-relaxed text-gray-700 dark:text-neutral-300">
-                  {post.summary}
-                </p>
-
-                <div className="mt-8 h-px w-full bg-neutral-200 dark:bg-neutral-800" />
-              </article>
-            ))}
-          </div>
+              </Link>
+              <p className="text-zinc-400 mt-2">{post.date}</p>
+              <p className="text-zinc-600 mt-6 leading-relaxed line-clamp-3">
+                {post.summary || (post.content ? post.content.substring(0, 200) + '...' : '')}
+              </p>
+            </div>
+          ))
         )}
-      </Section>
-    </Layout>
+      </div>
+    </div>
   );
 }

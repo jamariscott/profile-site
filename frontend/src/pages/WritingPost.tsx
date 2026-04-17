@@ -1,86 +1,54 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import Layout from "../components/Layout";
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-
-type Post = {
-  slug: string;
-  title: string;
-  date: string;
-  summary?: string;
-  content: string;
-};
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { API_BASE } from '../lib/config';
 
 export default function WritingPost() {
   const { slug } = useParams();
-  const [post, setPost] = useState<Post | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "notfound" | "error">("loading");
+  const [post, setPost] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setStatus("loading");
-
-    fetch(`${API_BASE}/api/writing`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
+    fetch(`${API_BASE}/api/writing/${slug}`)
+      .then(res => res.json())
+      .then(data => {
+        setPost(data);
+        setLoading(false);
       })
-      .then((posts: Post[]) => {
-        const match = posts.find((p) => p.slug === slug);
-        if (!match) {
-          setPost(null);
-          setStatus("notfound");
-          return;
-        }
-        setPost(match);
-        setStatus("ready");
-      })
-      .catch((err) => {
-        console.error("Writing post fetch failed:", err);
-        setStatus("error");
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
       });
   }, [slug]);
 
+  if (loading) return <div className="max-w-4xl mx-auto p-8">Loading post...</div>;
+  if (!post || post.error) return <div className="max-w-4xl mx-auto p-8">Post not found</div>;
+
   return (
-    <Layout>
-      {status === "loading" && <p className="text-neutral-500">Loading…</p>}
+    <div className="max-w-4xl mx-auto px-6 py-12 bg-white min-h-screen">
+      {/* Back link - matches list page style */}
+      <Link 
+        to="/writing" 
+        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-8 font-medium"
+      >
+        ← Back to Writing
+      </Link>
 
-      {status === "error" && (
-        <div className="space-y-2">
-          <p className="text-neutral-500">Couldn’t load the post from the server.</p>
-          <p className="text-sm text-neutral-500">
-            Make sure{" "}
-            <span className="font-mono">{API_BASE}/api/writing</span>{" "}
-            loads JSON.
-          </p>
-          <Link to="/writing" className="text-sm underline">
-            Back to Writing
-          </Link>
-        </div>
-      )}
+      {/* Card container - matches the list page aesthetic */}
+      <div className="bg-white border border-zinc-200 rounded-3xl shadow-sm p-10">
+        <h1 className="text-5xl font-bold text-zinc-900 tracking-tight mb-4">
+          {post.title}
+        </h1>
+        
+        <p className="text-zinc-500 text-lg mb-12">
+          {post.date}
+        </p>
 
-      {status === "notfound" && (
-        <div className="space-y-2">
-          <p className="text-neutral-500">Post not found.</p>
-          <Link to="/writing" className="text-sm underline">
-            Back to Writing
-          </Link>
-        </div>
-      )}
-
-      {status === "ready" && post && (
-        <article className="max-w-2xl space-y-6">
-          <header>
-            <h1 className="text-3xl font-semibold tracking-tight">{post.title}</h1>
-            <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">{post.date}</p>
-          </header>
-
-          <div
-            className="prose prose-lg prose-neutral max-w-none leading-relaxed dark:prose-invert"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
-        </article>
-      )}
-    </Layout>
+        {/* Article content */}
+        <div 
+          className="prose prose-zinc max-w-none text-lg leading-relaxed text-zinc-800"
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
+      </div>
+    </div>
   );
 }

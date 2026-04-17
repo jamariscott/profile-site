@@ -19,12 +19,17 @@ export default function Nav() {
       >
         Home
       </NavLink>
-
       <NavLink
         to="/writing"
         className={({ isActive }) => navLinkClass(isActive)}
       >
         Writing
+      </NavLink>
+      <NavLink
+        to="/videos"
+        className={({ isActive }) => navLinkClass(isActive)}
+      >
+        Videos
       </NavLink>
     </nav>
   );
