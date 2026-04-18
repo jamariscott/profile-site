@@ -1,7 +1,7 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface CardProps {
-  title?: string;        // ← made optional
+  title?: string;
   children: ReactNode;
   className?: string;
 }
