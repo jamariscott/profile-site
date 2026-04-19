@@ -55,7 +55,7 @@ async def get_writing(db: Session = Depends(get_db)):
         "slug": p.slug,
         "title": p.title,
         "date": p.date.isoformat() if p.date else None,
-        "summary": p.summary or "",
+        "summary": getattr(p, 'summary', ""),   # ← safe even if column missing
         "content": p.content
     } for p in posts]
 
@@ -76,7 +76,7 @@ async def admin_get_writing(db: Session = Depends(get_db), _: str = Depends(veri
         "slug": p.slug,
         "title": p.title,
         "date": p.date.isoformat() if p.date else None,
-        "summary": p.summary or "",
+        "summary": getattr(p, 'summary', ""),
         "x_posted": getattr(p, 'x_posted', False),
         "x_tweet_id": getattr(p, 'x_tweet_id', None)
     } for p in posts]
@@ -96,21 +96,17 @@ async def admin_create_writing(data: dict, db: Session = Depends(get_db), _: str
     db.commit()
     db.refresh(post)
 
-    # Save .md backup (fixed syntax)
+    # Save .md backup
     os.makedirs("writing", exist_ok=True)
     md_path = f"writing/{post.slug}.md"
-    frontmatter = """---
-title: "{}"
-date: {}
-summary: "{}"
+    frontmatter = f"""---
+title: "{post.title}"
+date: {post.date.date().isoformat() if post.date else datetime.now().date().isoformat()}
+summary: "{post.summary}"
 ---
 
-{}""".format(
-        post.title,
-        post.date.date().isoformat() if post.date else datetime.now().date().isoformat(),
-        post.summary,
-        post.content
-    )
+{post.content}
+"""
     with open(md_path, "w", encoding="utf-8") as f:
         f.write(frontmatter)
 
