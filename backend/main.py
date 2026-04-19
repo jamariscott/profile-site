@@ -52,15 +52,18 @@ async def get_videos(db: Session = Depends(get_db)):
 async def get_writing(db: Session = Depends(get_db)):
     try:
         posts = db.query(Writing).order_by(Writing.date.desc()).all()
-        return [{
-            "slug": p.slug,
-            "title": p.title,
-            "date": p.date.isoformat() if p.date else None,
-            "summary": p.summary or "",
-            "content": p.content
-        } for p in posts]
+        result = []
+        for p in posts:
+            result.append({
+                "slug": p.slug,
+                "title": p.title,
+                "date": p.date.isoformat() if p.date else None,
+                "summary": p.summary or "",
+                "content": p.content
+            })
+        return result
     except Exception as e:
-        print("ERROR in /api/writing:", str(e))  # ← will show in Render logs
+        print(f"ERROR in /api/writing: {e}")
         raise
 
 # ====================== ADMIN ENDPOINTS ======================
@@ -81,8 +84,8 @@ async def admin_get_writing(db: Session = Depends(get_db), _: str = Depends(veri
         "title": p.title,
         "date": p.date.isoformat() if p.date else None,
         "summary": p.summary or "",
-        "x_posted": p.x_posted,
-        "x_tweet_id": p.x_tweet_id
+        "x_posted": getattr(p, 'x_posted', False),
+        "x_tweet_id": getattr(p, 'x_tweet_id', None)
     } for p in posts]
 
 @app.post("/api/admin/writing")
@@ -105,13 +108,4 @@ async def admin_create_writing(data: dict, db: Session = Depends(get_db), _: str
     md_path = f"writing/{post.slug}.md"
     frontmatter = f"""---
 title: "{post.title}"
-date: {post.date.date().isoformat()}
-summary: "{post.summary}"
----
-
-{post.content}
-"""
-    with open(md_path, "w", encoding="utf-8") as f:
-        f.write(frontmatter)
-
-    return {"message": "Post created and saved as .md", "slug": post.slug}
+date:
