@@ -5,7 +5,6 @@ import json, os
 from datetime import datetime
 from database import SessionLocal
 from models import Profile, Project, Link, Video, Writing
-from writing_loader import load_posts
 
 app = FastAPI()
 
@@ -51,14 +50,18 @@ async def get_videos(db: Session = Depends(get_db)):
 
 @app.get("/api/writing")
 async def get_writing(db: Session = Depends(get_db)):
-    posts = db.query(Writing).order_by(Writing.date.desc()).all()
-    return [{
-        "slug": p.slug,
-        "title": p.title,
-        "date": p.date.isoformat(),
-        "summary": p.summary,
-        "content": p.content
-    } for p in posts]
+    try:
+        posts = db.query(Writing).order_by(Writing.date.desc()).all()
+        return [{
+            "slug": p.slug,
+            "title": p.title,
+            "date": p.date.isoformat() if p.date else None,
+            "summary": p.summary or "",
+            "content": p.content
+        } for p in posts]
+    except Exception as e:
+        print("ERROR in /api/writing:", str(e))  # ← will show in Render logs
+        raise
 
 # ====================== ADMIN ENDPOINTS ======================
 def verify_admin(authorization: str = Header(None)):
@@ -76,8 +79,8 @@ async def admin_get_writing(db: Session = Depends(get_db), _: str = Depends(veri
         "id": p.id,
         "slug": p.slug,
         "title": p.title,
-        "date": p.date.isoformat(),
-        "summary": p.summary,
+        "date": p.date.isoformat() if p.date else None,
+        "summary": p.summary or "",
         "x_posted": p.x_posted,
         "x_tweet_id": p.x_tweet_id
     } for p in posts]
@@ -91,13 +94,13 @@ async def admin_create_writing(data: dict, db: Session = Depends(get_db), _: str
         content=data["content"],
         x_posted=data.get("postToX", False),
         x_tweet_id=None,
-        x_posted_at=None if not data.get("postToX") else datetime.now()
+        x_posted_at=datetime.now() if data.get("postToX") else None
     )
     db.add(post)
     db.commit()
     db.refresh(post)
 
-    # ← NEW: Also save a .md file in writing/ folder
+    # Save .md backup
     os.makedirs("writing", exist_ok=True)
     md_path = f"writing/{post.slug}.md"
     frontmatter = f"""---
