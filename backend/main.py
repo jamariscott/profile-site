@@ -1,34 +1,22 @@
-import os
-from dotenv import load_dotenv
-
-load_dotenv()   # ← This loads your .env file
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
-from writing_loader import load_posts   # ← new import
 from sqlalchemy.orm import Session
-import json
-
+import json, os
+from datetime import datetime
 from database import SessionLocal
 from models import Profile, Project, Link, Video, Writing
+from writing_loader import load_posts
 
 app = FastAPI()
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://timezoftoday.com",
-        "https://www.timezoftoday.com",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174"
-    ],
+    allow_origins=["https://timezoftoday.com", "https://www.timezoftoday.com", "http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Database dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -36,6 +24,7 @@ def get_db():
     finally:
         db.close()
 
+# ====================== PUBLIC ENDPOINTS ======================
 @app.get("/api/profile")
 async def get_profile(db: Session = Depends(get_db)):
     profile = db.query(Profile).first()
@@ -50,102 +39,76 @@ async def get_profile(db: Session = Depends(get_db)):
 
 @app.get("/api/projects")
 async def get_projects(db: Session = Depends(get_db)):
-    projects = db.query(Project).all()
-    return [p.__dict__ for p in projects]
+    return [p.__dict__ for p in db.query(Project).all()]
 
 @app.get("/api/links")
 async def get_links(db: Session = Depends(get_db)):
-    links = db.query(Link).all()
-    return [l.__dict__ for l in links]
+    return [l.__dict__ for l in db.query(Link).all()]
 
 @app.get("/api/videos")
 async def get_videos(db: Session = Depends(get_db)):
-    videos = db.query(Video).all()
-    return [v.__dict__ for v in videos]
+    return [v.__dict__ for v in db.query(Video).all()]
 
-# === WRITING FROM DATABASE ===
 @app.get("/api/writing")
 async def get_writing(db: Session = Depends(get_db)):
-    writings = db.query(Writing).order_by(Writing.date.desc()).all()
-    return [
-        {
-            "slug": w.slug,
-            "title": w.title,
-            "date": w.date,
-            "summary": w.excerpt,
-            "content": w.content
-        }
-        for w in writings
-    ]
+    posts = db.query(Writing).order_by(Writing.date.desc()).all()
+    return [{
+        "slug": p.slug,
+        "title": p.title,
+        "date": p.date.isoformat(),
+        "summary": p.summary,
+        "content": p.content
+    } for p in posts]
 
-@app.get("/api/writing/{slug}")
-async def get_writing_post(slug: str, db: Session = Depends(get_db)):
-    post = db.query(Writing).filter(Writing.slug == slug).first()
-    if post:
-        return {
-            "slug": post.slug,
-            "title": post.title,
-            "date": post.date,
-            "summary": post.excerpt,
-            "content": post.content
-        }
-    # Helpful debug message if post is not found
-    return {"error": f"Post with slug '{slug}' not found"}
-from fastapi import HTTPException, Depends
-from pydantic import BaseModel
-import os
+# ====================== ADMIN ENDPOINTS ======================
+def verify_admin(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Unauthorized")
+    token = authorization.split("Bearer ")[1]
+    if token != os.getenv("ADMIN_PASSWORD"):
+        raise HTTPException(401, "Incorrect password")
+    return token
 
-# ====================== ADMIN PANEL ======================
-from pydantic import BaseModel
-
-class WritingCreate(BaseModel):
-    title: str
-    date: str
-    content: str
-    password: str
+@app.get("/api/admin/writing")
+async def admin_get_writing(db: Session = Depends(get_db), _: str = Depends(verify_admin)):
+    posts = db.query(Writing).order_by(Writing.date.desc()).all()
+    return [{
+        "id": p.id,
+        "slug": p.slug,
+        "title": p.title,
+        "date": p.date.isoformat(),
+        "summary": p.summary,
+        "x_posted": p.x_posted,
+        "x_tweet_id": p.x_tweet_id
+    } for p in posts]
 
 @app.post("/api/admin/writing")
-async def admin_create_writing(post: WritingCreate):
-    # Check password
-    if post.password != os.getenv("ADMIN_PASSWORD"):
-        raise HTTPException(status_code=401, detail="Incorrect admin password")
+async def admin_create_writing(data: dict, db: Session = Depends(get_db), _: str = Depends(verify_admin)):
+    post = Writing(
+        slug=data["slug"],
+        title=data["title"],
+        summary=data.get("summary", ""),
+        content=data["content"],
+        x_posted=data.get("postToX", False),
+        x_tweet_id=None,
+        x_posted_at=None if not data.get("postToX") else datetime.now()
+    )
+    db.add(post)
+    db.commit()
+    db.refresh(post)
 
-    # Save to database
-    db = SessionLocal()
-    try:
-        new_post = Writing(
-            slug=post.title.lower().replace(" ", "-").replace("'", ""),
-            title=post.title,
-            date=post.date,
-            content=post.content,           # you can convert markdown to html here later
-            excerpt=post.content[:200] + "..." if len(post.content) > 200 else post.content
-        )
-        db.add(new_post)
-        db.commit()
-        db.refresh(new_post)
-        
-        return {"message": "Article published successfully!", "slug": new_post.slug}
-    finally:
-        db.close()
+    # ← NEW: Also save a .md file in writing/ folder
+    os.makedirs("writing", exist_ok=True)
+    md_path = f"writing/{post.slug}.md"
+    frontmatter = f"""---
+title: "{post.title}"
+date: {post.date.date().isoformat()}
+summary: "{post.summary}"
+---
 
-# Optional: List all posts for admin
-@app.get("/api/admin/writing")
-async def admin_list_writing(password: str):
-    if password != os.getenv("ADMIN_PASSWORD"):
-        raise HTTPException(status_code=401, detail="Incorrect admin password")
-    db = SessionLocal()
-    posts = db.query(Writing).all()
-    db.close()
-    return posts
-@app.get("/api/admin/debug")
-async def debug_password():
-    loaded_password = os.getenv("ADMIN_PASSWORD")
-    return {
-        "message": "Debug info",
-        "password_is_set": loaded_password is not None,
-        "password_length": len(loaded_password) if loaded_password else 0,
-        "hint": loaded_password[:3] + "..." if loaded_password else None
-    }
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+{post.content}
+"""
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(frontmatter)
+
+    return {"message": "Post created and saved as .md", "slug": post.slug}

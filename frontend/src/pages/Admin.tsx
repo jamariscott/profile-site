@@ -1,24 +1,76 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { API_BASE } from '../lib/config';
+import { useState, useEffect } from "react";
+import { API_BASE } from "../lib/config";
+
+interface WritingPost {
+  id: number;
+  slug: string;
+  title: string;
+  date: string;
+  summary: string;
+  x_posted: boolean;
+  x_tweet_id?: string;
+}
 
 export default function Admin() {
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState('');
-  const [content, setContent] = useState('');
-  const [message, setMessage] = useState('');
-  const [posts, setPosts] = useState<any[]>([]);
-  const navigate = useNavigate();
+  const [posts, setPosts] = useState<WritingPost[]>([]);
+  const [newPost, setNewPost] = useState({
+    title: "",
+    slug: "",
+    summary: "",
+    content: "",
+    postToX: false,           // ← new checkbox
+  });
+  const [message, setMessage] = useState("");
 
-  // Fetch all posts
   const fetchPosts = async () => {
-    if (!password) return;
-    const res = await fetch(`${API_BASE}/api/admin/writing?password=${encodeURIComponent(password)}`);
+    const res = await fetch(`${API_BASE}/api/admin/writing`, {
+      headers: { Authorization: `Bearer ${password}` },
+    });
     if (res.ok) {
       const data = await res.json();
       setPosts(data);
+    }
+  };
+
+  const createPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch(`${API_BASE}/api/admin/writing`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${password}`,
+      },
+      body: JSON.stringify({
+        title: newPost.title,
+        slug: newPost.slug || newPost.title.toLowerCase().replace(/\s+/g, "-"),
+        summary: newPost.summary,
+        content: newPost.content,
+        postToX: newPost.postToX,        // ← send checkbox value
+      }),
+    });
+
+    if (res.ok) {
+      setMessage("✅ Post created!");
+      setNewPost({ title: "", slug: "", summary: "", content: "", postToX: false });
+      fetchPosts();
+    } else {
+      setMessage("❌ Failed to create post");
+    }
+  };
+
+  const publishToX = async (id: number) => {
+    const res = await fetch(`${API_BASE}/api/admin/writing/${id}/publish-to-x`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${password}` },
+    });
+
+    if (res.ok) {
+      setMessage("✅ Posted to X.com!");
+      fetchPosts();
+    } else {
+      setMessage("❌ Failed to post to X");
     }
   };
 
@@ -26,98 +78,106 @@ export default function Admin() {
     if (password) fetchPosts();
   }, [password]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await fetch(`${API_BASE}/api/admin/writing`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, date, content, password })
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      setMessage(`✅ "${title}" published!`);
-      setTitle('');
-      setDate('');
-      setContent('');
-      fetchPosts(); // instant update list
-    } else {
-      setMessage(`❌ ${data.detail || 'Wrong password'}`);
-    }
-  };
-
-  const handleDelete = async (slug: string) => {
-    if (!confirm(`Delete "${slug}"?`)) return;
-    const res = await fetch(`${API_BASE}/api/admin/writing/${slug}?password=${encodeURIComponent(password)}`, {
-      method: 'DELETE'
-    });
-    if (res.ok) {
-      setMessage(`🗑️ "${slug}" deleted`);
-      fetchPosts(); // instant update
-    }
-  };
-
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12 bg-white min-h-screen">
+    <div className="max-w-4xl mx-auto p-8">
       <h1 className="text-4xl font-bold mb-8">Admin Panel</h1>
 
-      {/* Create Form */}
-      <form onSubmit={handleSubmit} className="space-y-6 mb-16">
-        <div>
-          <label className="block text-sm font-medium mb-1">Admin Password</label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-zinc-300 rounded-2xl focus:outline-none focus:border-zinc-400 pr-12"
-              required
-            />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-xl text-zinc-400 hover:text-zinc-600">
-              {showPassword ? '🙈' : '👁️'}
-            </button>
-          </div>
+      {/* Password */}
+      <div className="mb-8">
+        <label className="block text-sm mb-2">Admin Password</label>
+        <div className="flex gap-2">
+          <input
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="flex-1 border border-zinc-300 rounded-2xl px-4 py-3"
+            placeholder="Enter password"
+          />
+          <button
+            onClick={() => setShowPassword(!showPassword)}
+            className="px-6 bg-zinc-100 rounded-2xl hover:bg-zinc-200"
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </button>
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-4 py-3 border border-zinc-300 rounded-2xl" required />
-        </div>
+      {message && <p className="mb-6 text-green-600">{message}</p>}
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Date (YYYY-MM-DD)</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 border border-zinc-300 rounded-2xl" required />
-        </div>
+      {/* Create new post */}
+      <form onSubmit={createPost} className="border border-zinc-200 rounded-3xl p-6 mb-12">
+        <h2 className="text-2xl font-semibold mb-4">New Article</h2>
+        <input
+          type="text"
+          placeholder="Title"
+          value={newPost.title}
+          onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+          className="w-full border border-zinc-200 rounded-2xl px-4 py-3 mb-4"
+          required
+        />
+        <input
+          type="text"
+          placeholder="Slug (optional)"
+          value={newPost.slug}
+          onChange={(e) => setNewPost({ ...newPost, slug: e.target.value })}
+          className="w-full border border-zinc-200 rounded-2xl px-4 py-3 mb-4"
+        />
+        <textarea
+          placeholder="Summary"
+          value={newPost.summary}
+          onChange={(e) => setNewPost({ ...newPost, summary: e.target.value })}
+          className="w-full border border-zinc-200 rounded-2xl px-4 py-3 mb-4 h-20"
+        />
+        <textarea
+          placeholder="Full content (Markdown supported)"
+          value={newPost.content}
+          onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+          className="w-full border border-zinc-200 rounded-2xl px-4 py-3 mb-6 h-64"
+          required
+        />
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Content (Markdown)</label>
-          <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={12} className="w-full px-4 py-3 border border-zinc-300 rounded-3xl font-mono text-sm" required />
-        </div>
+        {/* NEW: Post to X checkbox */}
+        <label className="flex items-center gap-2 mb-6 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={newPost.postToX}
+            onChange={(e) => setNewPost({ ...newPost, postToX: e.target.checked })}
+          />
+          <span className="text-zinc-700">Also post to X.com immediately</span>
+        </label>
 
-        <button type="submit" className="w-full py-4 bg-zinc-900 text-white rounded-3xl font-medium hover:bg-black transition-colors">
-          Publish New Article
+        <button
+          type="submit"
+          className="bg-black text-white px-8 py-4 rounded-2xl font-medium hover:bg-zinc-800"
+        >
+          Create Article
         </button>
       </form>
 
-      {message && <div className={`mb-8 p-4 rounded-2xl ${message.startsWith('✅') || message.startsWith('🗑️') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{message}</div>}
-
-      {/* List of Existing Articles */}
-      <h2 className="text-2xl font-semibold mb-6">Existing Articles ({posts.length})</h2>
+      {/* List of posts */}
+      <h2 className="text-2xl font-semibold mb-4">All Articles ({posts.length})</h2>
       <div className="space-y-4">
         {posts.map((post) => (
-          <div key={post.slug} className="flex justify-between items-center border border-zinc-200 rounded-3xl p-6">
+          <div key={post.id} className="border border-zinc-200 rounded-3xl p-6 flex justify-between items-center">
             <div>
               <h3 className="font-semibold">{post.title}</h3>
-              <p className="text-sm text-zinc-500">{post.date} • {post.slug}</p>
+              <p className="text-sm text-zinc-500">{post.date}</p>
             </div>
-            <button onClick={() => handleDelete(post.slug)} className="text-red-500 hover:text-red-700 px-4 py-2">Delete</button>
+            <div className="flex items-center gap-4">
+              {post.x_posted ? (
+                <span className="text-green-600 text-sm font-medium">✅ Posted to X</span>
+              ) : (
+                <button
+                  onClick={() => publishToX(post.id)}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Publish to X now
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
-
-      <button onClick={() => navigate('/')} className="mt-12 text-zinc-500 hover:text-zinc-700">
-        ← Back to Home
-      </button>
     </div>
   );
 }
