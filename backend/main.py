@@ -55,7 +55,7 @@ async def get_writing(db: Session = Depends(get_db)):
         "slug": p.slug,
         "title": p.title,
         "date": p.date.isoformat() if p.date else None,
-        "summary": getattr(p, 'summary', ""),   # ← safe even if column missing
+        "summary": getattr(p, 'summary', ""),           # ← safe
         "content": p.content
     } for p in posts]
 
