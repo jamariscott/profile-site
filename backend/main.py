@@ -50,21 +50,14 @@ async def get_videos(db: Session = Depends(get_db)):
 
 @app.get("/api/writing")
 async def get_writing(db: Session = Depends(get_db)):
-    try:
-        posts = db.query(Writing).order_by(Writing.date.desc()).all()
-        result = []
-        for p in posts:
-            result.append({
-                "slug": p.slug,
-                "title": p.title,
-                "date": p.date.isoformat() if p.date else None,
-                "summary": p.summary or "",
-                "content": p.content
-            })
-        return result
-    except Exception as e:
-        print(f"ERROR in /api/writing: {e}")
-        raise
+    posts = db.query(Writing).order_by(Writing.date.desc()).all()
+    return [{
+        "slug": p.slug,
+        "title": p.title,
+        "date": p.date.isoformat() if p.date else None,
+        "summary": p.summary or "",
+        "content": p.content
+    } for p in posts]
 
 # ====================== ADMIN ENDPOINTS ======================
 def verify_admin(authorization: str = Header(None)):
@@ -103,9 +96,22 @@ async def admin_create_writing(data: dict, db: Session = Depends(get_db), _: str
     db.commit()
     db.refresh(post)
 
-    # Save .md backup
+    # Save .md backup (fixed syntax)
     os.makedirs("writing", exist_ok=True)
     md_path = f"writing/{post.slug}.md"
-    frontmatter = f"""---
-title: "{post.title}"
-date:
+    frontmatter = """---
+title: "{}"
+date: {}
+summary: "{}"
+---
+
+{}""".format(
+        post.title,
+        post.date.date().isoformat() if post.date else datetime.now().date().isoformat(),
+        post.summary,
+        post.content
+    )
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(frontmatter)
+
+    return {"message": "Post created and saved as .md", "slug": post.slug}
