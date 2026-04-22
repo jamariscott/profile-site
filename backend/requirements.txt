@@ -5,4 +5,5 @@ markdown
 sqlalchemy
 python-dotenv
 alembic
-psycopg2-binary
+psycopg2-binary"alembic" 
+"alembic" 

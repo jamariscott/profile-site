@@ -1,21 +1,24 @@
+import os
 from logging.config import fileConfig
 
-from sqlalchemy import create_engine
+from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
 
-# Import our own database config and models
-from database import Base, SQLALCHEMY_DATABASE_URL
+# Load .env file
+from dotenv import load_dotenv
+load_dotenv()
 
-# this is the Alembic Config object
+# Import from our database.py
+from database import Base, DATABASE_URL
+
 config = context.config
 
-# Interpret the config file for Python logging
-fileConfig(config.config_file_name)
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
-# Use our database URL (this fixes the connection error)
-config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL.replace("+aiosqlite", ""))
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 target_metadata = Base.metadata
 
@@ -32,15 +35,15 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 def run_migrations_online() -> None:
-    connectable = create_engine(
-        config.get_main_option("sqlalchemy.url"),
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection,
-            target_metadata=target_metadata
+            connection=connection, target_metadata=target_metadata
         )
 
         with context.begin_transaction():
