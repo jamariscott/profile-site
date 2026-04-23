@@ -22,3 +22,8 @@
 "backend/venv/" 
 "__pycache__/" 
 "*.pyc" 
+"backend/.env" 
+"backend/database.db" 
+"backend/venv/" 
+"__pycache__/" 
+"*.pyc" 
