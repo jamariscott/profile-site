@@ -24,14 +24,15 @@ export default function WritingPost() {
   if (!post || post.error) return <div className="max-w-4xl mx-auto p-8">Post not found</div>;
 
   return (
-<div className="mb-8">
-  <Link
-    to="/"
-    className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors text-sm"
-  >
-    ← Back to Home
-  </Link>
-</div>
+{/* ← Back to Home button */}
+    <div className="mb-8">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors text-sm"
+      >
+        ← Back to Home
+      </Link>
+    </div>
     <div className="max-w-4xl mx-auto px-6 py-12 bg-white min-h-screen">
       {/* Back link - matches list page style */}
       <Link 
