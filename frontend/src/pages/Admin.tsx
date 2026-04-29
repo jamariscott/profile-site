@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { API_BASE } from '../lib/config';
 
 interface WritingPost {
@@ -15,13 +15,18 @@ export default function Admin() {
   const [posts, setPosts] = useState<WritingPost[]>([]);
   const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [newPost, setNewPost] = useState({ title: '', summary: '', content: '', postToX: false });
+  const [newPost, setNewPost] = useState({
+    title: '',
+    summary: '',
+    content: '',
+    postToX: false,
+    sponsorLogo: ''   // ← new field for monetization
+  });
 
   const loadPosts = () => {
     fetch(`${API_BASE}/api/admin/writing?password=${password}`)
       .then(res => res.json())
-      .then(data => setPosts(data))
-      .catch(() => alert('Wrong password'));
+      .then(data => setPosts(data));
   };
 
   const createPost = () => {
@@ -29,13 +34,11 @@ export default function Admin() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...newPost, password })
-    })
-      .then(res => res.json())
-      .then(() => {
-        alert('Post created!');
-        setNewPost({ title: '', summary: '', content: '', postToX: false });
-        loadPosts();
-      });
+    }).then(() => {
+      alert('✅ Article created!');
+      setNewPost({ title: '', summary: '', content: '', postToX: false, sponsorLogo: '' });
+      loadPosts();
+    });
   };
 
   const publishToX = (slug: string) => {
@@ -44,9 +47,7 @@ export default function Admin() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
-    })
-      .then(res => res.json())
-      .then(() => loadPosts());
+    }).then(() => loadPosts());
   };
 
   return (
@@ -55,16 +56,8 @@ export default function Admin() {
 
       {!isLoggedIn ? (
         <div>
-          <input
-            type="password"
-            placeholder="Enter admin password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="border p-3 w-full rounded-2xl mb-4"
-          />
-          <button onClick={() => { setIsLoggedIn(true); loadPosts(); }} className="bg-black text-white px-6 py-3 rounded-2xl">
-            Login
-          </button>
+          <input type="password" placeholder="Enter admin password" value={password} onChange={e => setPassword(e.target.value)} className="border p-3 w-full rounded-2xl mb-4" />
+          <button onClick={() => { setIsLoggedIn(true); loadPosts(); }} className="bg-black text-white px-6 py-3 rounded-2xl">Login</button>
         </div>
       ) : (
         <>
@@ -73,19 +66,25 @@ export default function Admin() {
             <h2 className="text-2xl font-semibold mb-4">Create New Article</h2>
             <input type="text" placeholder="Title" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} className="border p-3 w-full rounded-2xl mb-3" />
             <input type="text" placeholder="Summary" value={newPost.summary} onChange={e => setNewPost({...newPost, summary: e.target.value})} className="border p-3 w-full rounded-2xl mb-3" />
-            <textarea placeholder="Content (HTML allowed)" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} className="border p-3 w-full rounded-2xl h-40 mb-4" />
-            
-            <label className="flex items-center gap-2 text-sm">
+            <textarea placeholder="Content" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} className="border p-3 w-full rounded-2xl h-40 mb-4" />
+
+            <label className="flex items-center gap-2 text-sm mb-4">
               <input type="checkbox" checked={newPost.postToX} onChange={e => setNewPost({...newPost, postToX: e.target.checked})} />
               Also post to X.com
             </label>
 
-            <button onClick={createPost} className="mt-6 bg-black text-white px-8 py-4 rounded-2xl">
-              Create Article
-            </button>
+            <input 
+              type="text" 
+              placeholder="Sponsor logo URL (optional)" 
+              value={newPost.sponsorLogo} 
+              onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value})} 
+              className="border p-3 w-full rounded-2xl"
+            />
+
+            <button onClick={createPost} className="mt-6 bg-black text-white px-8 py-4 rounded-2xl">Create Article</button>
           </div>
 
-          {/* Existing posts */}
+          {/* Existing posts list */}
           <h2 className="text-2xl font-semibold mb-4">Existing Articles</h2>
           <div className="space-y-4">
             {posts.map(post => (
