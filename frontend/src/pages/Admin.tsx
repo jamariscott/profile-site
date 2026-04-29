@@ -20,7 +20,7 @@ export default function Admin() {
     summary: '',
     content: '',
     postToX: false,
-    sponsorLogo: ''   // ← new field for monetization
+    sponsorLogo: ''
   });
 
   const loadPosts = () => {
@@ -56,12 +56,22 @@ export default function Admin() {
 
       {!isLoggedIn ? (
         <div>
-          <input type="password" placeholder="Enter admin password" value={password} onChange={e => setPassword(e.target.value)} className="border p-3 w-full rounded-2xl mb-4" />
-          <button onClick={() => { setIsLoggedIn(true); loadPosts(); }} className="bg-black text-white px-6 py-3 rounded-2xl">Login</button>
+          <input 
+            type="password" 
+            placeholder="Enter admin password" 
+            value={password} 
+            onChange={e => setPassword(e.target.value)} 
+            className="border p-3 w-full rounded-2xl mb-4" 
+          />
+          <button 
+            onClick={() => { setIsLoggedIn(true); loadPosts(); }} 
+            className="bg-black text-white px-6 py-3 rounded-2xl"
+          >
+            Login
+          </button>
         </div>
       ) : (
         <>
-          {/* Create new post */}
           <div className="border border-zinc-200 rounded-3xl p-6 mb-10">
             <h2 className="text-2xl font-semibold mb-4">Create New Article</h2>
             <input type="text" placeholder="Title" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} className="border p-3 w-full rounded-2xl mb-3" />
@@ -84,7 +94,6 @@ export default function Admin() {
             <button onClick={createPost} className="mt-6 bg-black text-white px-8 py-4 rounded-2xl">Create Article</button>
           </div>
 
-          {/* Existing posts list */}
           <h2 className="text-2xl font-semibold mb-4">Existing Articles</h2>
           <div className="space-y-4">
             {posts.map(post => (
