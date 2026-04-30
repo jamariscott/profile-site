@@ -41,8 +41,7 @@ class Writing(Base):
     date = Column(DateTime, default=func.now())
     summary = Column(Text)
     content = Column(Text, nullable=False)
-
-    # ← NEW X.com publishing fields
+    sponsor_logo = Column(String, nullable=True)   # ← new field for monetization
     x_posted = Column(Boolean, default=False)
     x_tweet_id = Column(String, nullable=True)
     x_posted_at = Column(DateTime, nullable=True)
