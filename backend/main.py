@@ -15,7 +15,8 @@ app.add_middleware(
         "https://timezoftoday.com",
         "http://localhost:5173",
         "http://localhost:5174",
-        "*"   # ← temporary for testing (we'll remove later)
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174"
     ],
     allow_credentials=True,
     allow_methods=["*"],
