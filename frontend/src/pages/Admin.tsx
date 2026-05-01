@@ -8,7 +8,6 @@ interface WritingPost {
   summary: string;
   content: string;
   x_posted: boolean;
-  x_tweet_id?: string;
 }
 
 export default function Admin() {
@@ -18,24 +17,63 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [newPost, setNewPost] = useState({
+    title: '',
+    summary: '',
+    content: '',
+    postToX: false,
+    sponsorLogo: ''
+  });
+
   const loadPosts = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/api/admin/writing?password=${password}`);
-      if (!res.ok) throw new Error('Wrong password or server error');
+      const res = await fetch(`${API_BASE}/api/admin/writing?password=${encodeURIComponent(password)}`);
+      if (!res.ok) throw new Error('Wrong password');
       const data = await res.json();
       setPosts(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load posts');
-      console.error(err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const createPost = async () => {
-    // ... (I'll add this in the next message if needed)
+    if (!newPost.title || !newPost.content) {
+      alert("Title and content are required");
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/writing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newPost, password })
+      });
+      if (!res.ok) throw new Error('Failed to create post');
+      alert('✅ Article created!');
+      setNewPost({ title: '', summary: '', content: '', postToX: false, sponsorLogo: '' });
+      loadPosts();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const publishToX = async (slug: string) => {
+    if (!confirm('Publish this post to X.com now?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/publish-to-x/${slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      if (!res.ok) throw new Error('Failed to publish');
+      alert('✅ Marked as posted to X');
+      loadPosts();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   return (
@@ -60,30 +98,46 @@ export default function Admin() {
         </div>
       ) : (
         <div>
-          {error && <p className="text-red-600 mb-4">{error}</p>}
-          {loading && <p className="text-zinc-500">Loading posts...</p>}
+          {error && <p className="text-red-600 mb-6">{error}</p>}
 
-          {/* Create new post section */}
+          {/* Create new post */}
           <div className="border border-zinc-200 rounded-3xl p-6 mb-10">
             <h2 className="text-2xl font-semibold mb-4">Create New Article</h2>
-            {/* ... we'll add the full form in the next step if you want it */}
-            <p className="text-zinc-400">Create form will go here (next step)</p>
+            <input type="text" placeholder="Title" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} className="border p-3 w-full rounded-2xl mb-3" />
+            <input type="text" placeholder="Summary" value={newPost.summary} onChange={e => setNewPost({...newPost, summary: e.target.value})} className="border p-3 w-full rounded-2xl mb-3" />
+            <textarea placeholder="Content" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} className="border p-3 w-full rounded-2xl h-40 mb-4" />
+
+            <label className="flex items-center gap-2 text-sm mb-4">
+              <input type="checkbox" checked={newPost.postToX} onChange={e => setNewPost({...newPost, postToX: e.target.checked})} />
+              Also post to X.com
+            </label>
+
+            <input type="text" placeholder="Sponsor logo URL (optional)" value={newPost.sponsorLogo} onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value})} className="border p-3 w-full rounded-2xl mb-6" />
+
+            <button onClick={createPost} className="bg-black text-white px-8 py-4 rounded-2xl">Create Article</button>
           </div>
 
-          {/* Posts list */}
+          {/* Existing posts */}
           <h2 className="text-2xl font-semibold mb-4">Existing Articles</h2>
-          {posts.length === 0 ? (
-            <p className="text-zinc-400">No posts yet.</p>
-          ) : (
-            <div className="space-y-4">
-              {posts.map(post => (
-                <div key={post.slug} className="border border-zinc-200 rounded-3xl p-6">
+          <div className="space-y-4">
+            {posts.map(post => (
+              <div key={post.slug} className="border border-zinc-200 rounded-3xl p-6 flex justify-between items-center">
+                <div>
                   <h3 className="font-semibold">{post.title}</h3>
                   <p className="text-sm text-zinc-500">{post.date}</p>
                 </div>
-              ))}
-            </div>
-          )}
+                <div>
+                  {post.x_posted ? (
+                    <span className="text-green-600 text-sm">✅ Posted to X</span>
+                  ) : (
+                    <button onClick={() => publishToX(post.slug)} className="text-blue-600 hover:text-blue-700 text-sm">
+                      Publish to X now
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
