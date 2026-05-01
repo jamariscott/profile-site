@@ -10,12 +10,17 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://www.timezoftoday.com", "https://timezoftoday.com", "http://localhost:5173", "http://localhost:5174"],
+    allow_origins=[
+        "https://www.timezoftoday.com",
+        "https://timezoftoday.com",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "*"   # ← temporary for testing (we'll remove later)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 def get_db():
     db = SessionLocal()
     try:
