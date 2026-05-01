@@ -14,7 +14,6 @@ export default function Admin() {
   const [posts, setPosts] = useState<WritingPost[]>([]);
   const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const [newPost, setNewPost] = useState({
@@ -26,17 +25,14 @@ export default function Admin() {
   });
 
   const loadPosts = async () => {
-    setLoading(true);
     setError('');
     try {
       const res = await fetch(`${API_BASE}/api/admin/writing?password=${encodeURIComponent(password)}`);
-      if (!res.ok) throw new Error('Wrong password');
+      if (!res.ok) throw new Error('Wrong password or server error');
       const data = await res.json();
       setPosts(data);
     } catch (err: any) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -56,7 +52,7 @@ export default function Admin() {
       setNewPost({ title: '', summary: '', content: '', postToX: false, sponsorLogo: '' });
       loadPosts();
     } catch (err: any) {
-      alert(err.message);
+      alert(err.message || 'Failed to create post');
     }
   };
 
@@ -98,7 +94,7 @@ export default function Admin() {
         </div>
       ) : (
         <div>
-          {error && <p className="text-red-600 mb-6">{error}</p>}
+          {error && <p className="text-red-600 mb-6 p-4 bg-red-50 rounded-2xl">{error}</p>}
 
           {/* Create new post */}
           <div className="border border-zinc-200 rounded-3xl p-6 mb-10">
