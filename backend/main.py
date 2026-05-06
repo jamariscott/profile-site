@@ -10,8 +10,13 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],           # ← temporary for testing (we'll tighten later)
-    allow_credentials=True,
+    allow_origins=[
+        "https://www.timezoftoday.com",
+        "https://timezoftoday.com",
+        "http://localhost:5173",
+        "http://localhost:5174",
+    ],
+    allow_credentials=False,   # ← change this to False (you don't need it)
     allow_methods=["*"],
     allow_headers=["*"],
 )
