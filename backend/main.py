@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import json, os
 from datetime import datetime
+import tweepy
+import urllib.request
+from io import BytesIO
+
 from database import SessionLocal
 from models import Profile, Project, Link, Video, Writing
 
@@ -16,10 +20,11 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:5174",
     ],
-    allow_credentials=False,   # ← change this to False (you don't need it)
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 def get_db():
     db = SessionLocal()
     try:
@@ -107,10 +112,71 @@ async def admin_publish_to_x(slug: str, data: dict, db: Session = Depends(get_db
     if not post:
         raise HTTPException(404, "Post not found")
     
-    post.x_posted = True
-    post.x_posted_at = datetime.utcnow()
-    db.commit()
-    return {"message": "Marked as posted to X"}
+    # === REAL X.COM POSTING LOGIC (Tweepy v2 + media upload) ===
+    try:
+        # Initialize Tweepy Client (v2)
+        client = tweepy.Client(
+            consumer_key=os.getenv("X_CONSUMER_KEY"),
+            consumer_secret=os.getenv("X_CONSUMER_SECRET"),
+            access_token=os.getenv("X_ACCESS_TOKEN"),
+            access_token_secret=os.getenv("X_ACCESS_TOKEN_SECRET"),
+        )
+        
+        # Build tweet text
+        tweet_text = f"{post.title}\n\n{post.summary or ''}\n\n🔗 Read full post: https://www.timezoftoday.com/writing/{post.slug}"
+        
+        # Sponsor logo handling
+        media_ids = []
+        if post.sponsor_logo:
+            tweet_text += "\n\n💼 Sponsored by:"
+            # Try to attach sponsor logo as image in the tweet
+            try:
+                with urllib.request.urlopen(post.sponsor_logo, timeout=10) as resp:
+                    image_data = resp.read()
+                
+                # v1.1 API for media upload
+                auth = tweepy.OAuth1UserHandler(
+                    consumer_key=os.getenv("X_CONSUMER_KEY"),
+                    consumer_secret=os.getenv("X_CONSUMER_SECRET"),
+                    access_token=os.getenv("X_ACCESS_TOKEN"),
+                    access_token_secret=os.getenv("X_ACCESS_TOKEN_SECRET")
+                )
+                api = tweepy.API(auth)
+                media = api.media_upload(
+                    filename="sponsor.jpg",
+                    file=BytesIO(image_data)
+                )
+                media_ids = [media.media_id]
+                tweet_text += " [image attached]"
+            except Exception:
+                # Fallback: just include the URL
+                tweet_text += f" {post.sponsor_logo}"
+        
+        tweet_text += "\n\n#Writing #TimeZofToday"
+        
+        # Post to X
+        response = client.create_tweet(
+            text=tweet_text.strip(),
+            media_ids=media_ids if media_ids else None
+        )
+        
+        tweet_id = response.data["id"]
+        
+        # Update database
+        post.x_posted = True
+        post.x_tweet_id = str(tweet_id)
+        post.x_posted_at = datetime.utcnow()
+        db.commit()
+        
+        return {
+            "message": "✅ Successfully posted to X!",
+            "tweet_id": tweet_id,
+            "tweet_url": f"https://x.com/i/web/status/{tweet_id}"
+        }
+        
+    except Exception as e:
+        # Do NOT mark as posted if X call fails
+        raise HTTPException(status_code=500, detail=f"Failed to post to X: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
