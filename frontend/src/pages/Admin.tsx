@@ -12,9 +12,11 @@ interface WritingPost {
 
 export default function Admin() {
   const [posts, setPosts] = useState<WritingPost[]>([]);
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const [newPost, setNewPost] = useState({
     title: '',
@@ -24,11 +26,47 @@ export default function Admin() {
     sponsorLogo: ''
   });
 
+  // === LOGIN ===
+  const handleLogin = async () => {
+    if (!username || !password) {
+      setError('Please enter both username and password');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || 'Login failed');
+      }
+
+      // Login successful
+      setIsLoggedIn(true);
+      loadPosts(); // load posts right after login
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // === LOAD POSTS ===
   const loadPosts = async () => {
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/api/admin/writing?password=${encodeURIComponent(password)}`);
-      if (!res.ok) throw new Error('Wrong password or server error');
+      const res = await fetch(
+        `${API_BASE}/api/admin/writing?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+      );
+      if (!res.ok) throw new Error('Failed to load posts');
       const data = await res.json();
       setPosts(data);
     } catch (err: any) {
@@ -36,19 +74,27 @@ export default function Admin() {
     }
   };
 
+  // === CREATE POST ===
   const createPost = async () => {
     if (!newPost.title || !newPost.content) {
       alert("Title and content are required");
       return;
     }
+
     try {
       const res = await fetch(`${API_BASE}/api/admin/writing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newPost, password })
+        body: JSON.stringify({
+          ...newPost,
+          username,
+          password
+        }),
       });
+
       if (!res.ok) throw new Error('Failed to create post');
-      alert('✅ Article created!');
+
+      alert('Article created successfully!');
       setNewPost({ title: '', summary: '', content: '', postToX: false, sponsorLogo: '' });
       loadPosts();
     } catch (err: any) {
@@ -56,16 +102,20 @@ export default function Admin() {
     }
   };
 
+  // === PUBLISH TO X ===
   const publishToX = async (slug: string) => {
     if (!confirm('Publish this post to X.com now?')) return;
+
     try {
       const res = await fetch(`${API_BASE}/api/admin/publish-to-x/${slug}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ username, password }),
       });
+
       if (!res.ok) throw new Error('Failed to publish');
-      alert('✅ Marked as posted to X');
+
+      alert('Marked as posted to X');
       loadPosts();
     } catch (err: any) {
       alert(err.message);
@@ -79,18 +129,28 @@ export default function Admin() {
       {!isLoggedIn ? (
         <div className="max-w-md">
           <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            className="border p-4 w-full rounded-3xl text-lg mb-4"
+          />
+          <input
             type="password"
             placeholder="Enter admin password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             className="border p-4 w-full rounded-3xl text-lg mb-4"
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
           />
           <button
-            onClick={() => { setIsLoggedIn(true); loadPosts(); }}
-            className="bg-zinc-900 text-white px-8 py-4 rounded-3xl w-full text-lg font-medium"
+            onClick={handleLogin}
+            disabled={loading}
+            className="bg-zinc-900 text-white px-8 py-4 rounded-3xl w-full text-lg font-medium disabled:opacity-50"
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
+          {error && <p className="text-red-600 mt-4">{error}</p>}
         </div>
       ) : (
         <div>
@@ -114,8 +174,13 @@ export default function Admin() {
           </div>
 
           {/* Existing posts */}
-          <h2 className="text-2xl font-semibold mb-4">Existing Articles</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold">Existing Articles</h2>
+            <button onClick={loadPosts} className="text-sm text-zinc-500 hover:text-zinc-700">Refresh</button>
+          </div>
+
           <div className="space-y-4">
+            {posts.length === 0 && <p className="text-zinc-500">No posts yet.</p>}
             {posts.map(post => (
               <div key={post.slug} className="border border-zinc-200 rounded-3xl p-6 flex justify-between items-center">
                 <div>
@@ -124,7 +189,7 @@ export default function Admin() {
                 </div>
                 <div>
                   {post.x_posted ? (
-                    <span className="text-green-600 text-sm">✅ Posted to X</span>
+                    <span className="text-green-600 text-sm">Posted to X</span>
                   ) : (
                     <button onClick={() => publishToX(post.slug)} className="text-blue-600 hover:text-blue-700 text-sm">
                       Publish to X now
