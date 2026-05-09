@@ -128,6 +128,7 @@ async def admin_publish_to_x(slug: str, data: dict, db: Session = Depends(get_db
     username = data.get("username")
     password = data.get("password")
     
+    # Verify admin credentials
     admin = db.query(Admin).filter(Admin.username == username).first()
     if not admin or not verify_password(password, admin.hashed_password):
         raise HTTPException(401, "Unauthorized")
@@ -136,7 +137,7 @@ async def admin_publish_to_x(slug: str, data: dict, db: Session = Depends(get_db
     if not post:
         raise HTTPException(404, "Post not found")
     
-    # === REAL X.COM POSTING WITH TWEEPY ===
+    # === REAL X.COM POSTING LOGIC ===
     try:
         client = tweepy.Client(
             consumer_key=os.getenv("X_CONSUMER_KEY"),
@@ -145,14 +146,14 @@ async def admin_publish_to_x(slug: str, data: dict, db: Session = Depends(get_db
             access_token_secret=os.getenv("X_ACCESS_TOKEN_SECRET"),
         )
         
-        # Build tweet text
+        # Build the tweet
         tweet_text = f"{post.title}\n\n{post.summary or ''}\n\n🔗 Read full post: https://www.timezoftoday.com/writing/{post.slug}"
         
-        media_ids = []
+        media_ids: list = []
         if post.sponsor_logo:
             tweet_text += "\n\n💼 Sponsored by:"
             try:
-                # Try to attach sponsor logo as image
+                # Download and attach sponsor logo as image
                 with urllib.request.urlopen(post.sponsor_logo, timeout=10) as resp:
                     image_data = resp.read()
                 
@@ -163,18 +164,20 @@ async def admin_publish_to_x(slug: str, data: dict, db: Session = Depends(get_db
                     access_token_secret=os.getenv("X_ACCESS_TOKEN_SECRET")
                 )
                 api = tweepy.API(auth)
+                
                 media = api.media_upload(
                     filename="sponsor.jpg",
                     file=BytesIO(image_data)
                 )
                 media_ids = [media.media_id]
                 tweet_text += " [image attached]"
-            except:
+            except Exception:
+                # Fallback: just add the URL
                 tweet_text += f" {post.sponsor_logo}"
         
         tweet_text += "\n\n#Writing #TimeZofToday"
         
-        # Post to X
+        # Send the tweet
         response = client.create_tweet(
             text=tweet_text.strip(),
             media_ids=media_ids if media_ids else None
@@ -189,10 +192,14 @@ async def admin_publish_to_x(slug: str, data: dict, db: Session = Depends(get_db
         db.commit()
         
         return {
+            "success": True,
             "message": "✅ Successfully posted to X!",
             "tweet_id": tweet_id,
             "tweet_url": f"https://x.com/i/web/status/{tweet_id}"
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to post to X: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to post to X: {str(e)}"
+        )
