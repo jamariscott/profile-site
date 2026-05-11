@@ -49,9 +49,8 @@ export default function Admin() {
         throw new Error(data.detail || 'Login failed');
       }
 
-      // Login successful
       setIsLoggedIn(true);
-      loadPosts(); // load posts right after login
+      loadPosts();
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
@@ -80,7 +79,6 @@ export default function Admin() {
       alert("Title and content are required");
       return;
     }
-
     try {
       const res = await fetch(`${API_BASE}/api/admin/writing`, {
         method: 'POST',
@@ -91,9 +89,7 @@ export default function Admin() {
           password
         }),
       });
-
       if (!res.ok) throw new Error('Failed to create post');
-
       alert('Article created successfully!');
       setNewPost({ title: '', summary: '', content: '', postToX: false, sponsorLogo: '' });
       loadPosts();
@@ -105,20 +101,39 @@ export default function Admin() {
   // === PUBLISH TO X ===
   const publishToX = async (slug: string) => {
     if (!confirm('Publish this post to X.com now?')) return;
-
     try {
       const res = await fetch(`${API_BASE}/api/admin/publish-to-x/${slug}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-
       if (!res.ok) throw new Error('Failed to publish');
-
       alert('Marked as posted to X');
       loadPosts();
     } catch (err: any) {
       alert(err.message);
+    }
+  };
+
+  // === DELETE POST ===
+  const deletePost = async (slug: string, title: string) => {
+    if (!confirm(`Delete "${title}" permanently? This cannot be undone.`)) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/writing/${slug}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (res.ok) {
+        alert('Post deleted successfully');
+        loadPosts();
+      } else {
+        alert('Failed to delete post');
+      }
+    } catch (err) {
+      alert('Error deleting post');
     }
   };
 
@@ -191,34 +206,15 @@ export default function Admin() {
                   {post.x_posted ? (
                     <span className="text-green-600 text-sm">Posted to X</span>
                   ) : (
-                    <button 
-                      onClick={() => publishToX(post.slug)} 
+                    <button
+                      onClick={() => publishToX(post.slug)}
                       className="text-blue-600 hover:text-blue-700 text-sm"
                     >
                       Publish to X now
                     </button>
                   )}
-                  
                   <button
-                    onClick={async () => {
-                      if (confirm(`Delete "${post.title}" permanently?`)) {
-                        try {
-                          const res = await fetch(`${API_BASE}/api/admin/writing/${post.slug}`, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ username, password })
-                          });
-                          if (res.ok) {
-                            alert('Post deleted');
-                            loadPosts();
-                          } else {
-                            alert('Failed to delete');
-                          }
-                        } catch (err) {
-                          alert('Error deleting post');
-                        }
-                      }
-                    }}
+                    onClick={() => deletePost(post.slug, post.title)}
                     className="text-red-600 hover:text-red-700 text-sm"
                   >
                     Delete
@@ -227,3 +223,8 @@ export default function Admin() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
