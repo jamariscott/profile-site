@@ -1,10 +1,12 @@
-import tweepy
-import urllib.request
-from io import BytesIOfrom fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-import json, os
+import json
+import os
 from datetime import datetime
+import tweepy
+import urllib.request
+from io import BytesIO
 import bcrypt
 
 from database import SessionLocal
