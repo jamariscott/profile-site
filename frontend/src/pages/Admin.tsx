@@ -187,20 +187,43 @@ export default function Admin() {
                   <h3 className="font-semibold">{post.title}</h3>
                   <p className="text-sm text-zinc-500">{post.date}</p>
                 </div>
-                <div>
+                <div className="flex items-center gap-4">
                   {post.x_posted ? (
                     <span className="text-green-600 text-sm">Posted to X</span>
                   ) : (
-                    <button onClick={() => publishToX(post.slug)} className="text-blue-600 hover:text-blue-700 text-sm">
+                    <button 
+                      onClick={() => publishToX(post.slug)} 
+                      className="text-blue-600 hover:text-blue-700 text-sm"
+                    >
                       Publish to X now
                     </button>
                   )}
+                  
+                  <button
+                    onClick={async () => {
+                      if (confirm(`Delete "${post.title}" permanently?`)) {
+                        try {
+                          const res = await fetch(`${API_BASE}/api/admin/writing/${post.slug}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username, password })
+                          });
+                          if (res.ok) {
+                            alert('Post deleted');
+                            loadPosts();
+                          } else {
+                            alert('Failed to delete');
+                          }
+                        } catch (err) {
+                          alert('Error deleting post');
+                        }
+                      }
+                    }}
+                    className="text-red-600 hover:text-red-700 text-sm"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
-    </div>
-  );
-}

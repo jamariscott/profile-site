@@ -205,3 +205,21 @@ async def admin_publish_to_x(slug: str, data: dict, db: Session = Depends(get_db
             status_code=500, 
             detail=f"Failed to post to X: {str(e)}"
         )
+
+@app.delete("/api/admin/writing/{slug}")
+async def admin_delete_writing(slug: str, data: dict, db: Session = Depends(get_db)):
+    username = data.get("username")
+    password = data.get("password")
+    
+    admin = db.query(Admin).filter(Admin.username == username).first()
+    if not admin or not verify_password(password, admin.hashed_password):
+        raise HTTPException(401, "Unauthorized")
+    
+    post = db.query(Writing).filter(Writing.slug == slug).first()
+    if not post:
+        raise HTTPException(404, "Post not found")
+    
+    db.delete(post)
+    db.commit()
+    
+    return {"message": "Post deleted successfully"}
