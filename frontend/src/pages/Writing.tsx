@@ -10,6 +10,16 @@ interface WritingPost {
   summary: string;
   x_posted: boolean;
   sponsor_logo?: string;
+  content?: string;
+}
+
+function extractThumbnail(post: WritingPost): string | null {
+  if (post.sponsor_logo) return post.sponsor_logo;
+  if (post.content) {
+    const match = post.content.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (match) return match[1];
+  }
+  return null;
 }
 
 export default function Writing() {
@@ -29,38 +39,86 @@ export default function Writing() {
       });
   }, []);
 
-  if (loading) return <div className="max-w-4xl mx-auto p-8">Loading writing...</div>;
+  if (loading) return <div className="max-w-5xl mx-auto p-8">Loading writing...</div>;
+
+  if (posts.length === 0) return (
+    <div className="bg-white min-h-screen">
+      <PageNav />
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        <h1 className="text-5xl font-bold text-zinc-900 mb-10">Writing</h1>
+        <p className="text-zinc-500">No posts yet.</p>
+      </div>
+    </div>
+  );
+
+  const [hero, ...rest] = posts;
+  const heroThumb = extractThumbnail(hero);
 
   return (
     <div className="bg-white min-h-screen">
       <PageNav />
-      <div className="max-w-4xl mx-auto px-6 py-12">
-      <h1 className="text-5xl font-bold text-zinc-900 mb-10">Writing</h1>
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        <h1 className="text-5xl font-bold text-zinc-900 mb-10">Writing</h1>
 
-      <div className="space-y-8">
-        {posts.map((post) => (
-          <Link
-            key={post.slug}
-            to={`/writing/${post.slug}`}
-            className="block group"
-          >
-            <div className="flex justify-between items-baseline">
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-semibold text-zinc-900 group-hover:text-zinc-700 transition-colors">
+        {/* Hero featured article */}
+        <Link to={`/writing/${hero.slug}`} className="block group mb-12">
+          {heroThumb && (
+            <div className="w-full h-80 rounded-2xl overflow-hidden mb-6">
+              <img
+                src={heroThumb}
+                alt={hero.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+          )}
+          <div className="flex items-center gap-3 mb-3">
+            {hero.sponsor_logo && (
+              <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400 border border-zinc-200 px-2 py-0.5 rounded-full">
+                Sponsored
+              </span>
+            )}
+            <span className="text-sm text-zinc-500">{hero.date}</span>
+          </div>
+          <h2 className="text-4xl font-bold text-zinc-900 group-hover:text-zinc-700 transition-colors leading-tight mb-3">
+            {hero.title}
+          </h2>
+          <p className="text-zinc-600 text-lg line-clamp-3">{hero.summary}</p>
+        </Link>
+
+        {/* Divider */}
+        {rest.length > 0 && <hr className="border-zinc-200 mb-10" />}
+
+        {/* 2-column card grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {rest.map((post) => {
+            const thumb = extractThumbnail(post);
+            return (
+              <Link key={post.slug} to={`/writing/${post.slug}`} className="block group">
+                {thumb && (
+                  <div className="w-full h-48 rounded-xl overflow-hidden mb-4">
+                    <img
+                      src={thumb}
+                      alt={post.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mb-2">
+                  {post.sponsor_logo && (
+                    <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400 border border-zinc-200 px-2 py-0.5 rounded-full">
+                      Sponsored
+                    </span>
+                  )}
+                  <span className="text-xs text-zinc-500">{post.date}</span>
+                </div>
+                <h2 className="text-xl font-bold text-zinc-900 group-hover:text-zinc-700 transition-colors leading-snug mb-2">
                   {post.title}
                 </h2>
-                {post.sponsor_logo && (
-                  <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400 border border-zinc-200 px-2 py-0.5 rounded-full">
-                    Sponsored
-                  </span>
-                )}
-              </div>
-              <span className="text-sm text-zinc-500 shrink-0 ml-4">{post.date}</span>
-            </div>
-            <p className="text-zinc-600 mt-2 line-clamp-3">{post.summary}</p>
-          </Link>
-        ))}
-      </div>
+                <p className="text-zinc-600 text-sm line-clamp-3">{post.summary}</p>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

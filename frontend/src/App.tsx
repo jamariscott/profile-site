@@ -1,5 +1,5 @@
 import Admin from "./pages/Admin";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import Layout from "./components/Layout";
@@ -24,10 +24,29 @@ export default function App() {
   );
 }
 
+interface WritingPost {
+  slug: string;
+  title: string;
+  date: string;
+  summary: string;
+  sponsor_logo?: string;
+  content?: string;
+}
+
+function extractThumbnail(post: WritingPost): string | null {
+  if (post.sponsor_logo) return post.sponsor_logo;
+  if (post.content) {
+    const match = post.content.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (match) return match[1];
+  }
+  return null;
+}
+
 function Home() {
   const [profile, setProfile] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [links, setLinks] = useState<any[]>([]);
+  const [articles, setArticles] = useState<WritingPost[]>([]);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/profile`)
@@ -41,6 +60,11 @@ function Home() {
     fetch(`${API_BASE}/api/links`)
       .then(res => res.json())
       .then(data => setLinks(data));
+
+    fetch(`${API_BASE}/api/writing`)
+      .then(res => res.json())
+      .then(data => setArticles(data.slice(0, 3)))
+      .catch(() => {});
   }, []);
 
   return (
@@ -88,7 +112,7 @@ function Home() {
             </a>
           ))}
 
-          {/* New Videos Link */}
+          {/* Videos Link */}
           <a
             href="/videos"
             className="px-6 py-3 bg-white border border-zinc-200 rounded-2xl hover:border-zinc-300 transition-colors flex items-center gap-2"
@@ -97,6 +121,43 @@ function Home() {
           </a>
         </div>
       </Section>
+
+      {/* Latest Articles */}
+      {articles.length > 0 && (
+        <Section title="Latest Articles">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {articles.map((post) => {
+              const thumb = extractThumbnail(post);
+              return (
+                <Link key={post.slug} to={`/writing/${post.slug}`} className="block group">
+                  {thumb && (
+                    <div className="w-full h-40 rounded-xl overflow-hidden mb-3">
+                      <img
+                        src={thumb}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+                  <span className="text-xs text-zinc-500 block mb-1">{post.date}</span>
+                  <h3 className="font-semibold text-zinc-900 group-hover:text-zinc-700 transition-colors leading-snug mb-1">
+                    {post.title}
+                  </h3>
+                  <p className="text-zinc-600 text-sm line-clamp-2">{post.summary}</p>
+                </Link>
+              );
+            })}
+          </div>
+          <div className="mt-6">
+            <Link
+              to="/writing"
+              className="text-sm font-medium text-zinc-900 hover:text-zinc-600 transition-colors"
+            >
+              View all articles →
+            </Link>
+          </div>
+        </Section>
+      )}
     </Layout>
   );
 }
