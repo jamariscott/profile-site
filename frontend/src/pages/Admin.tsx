@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { API_BASE } from '../lib/config';
+import RichTextEditor from '../components/RichTextEditor';
 
 interface WritingPost {
   slug: string;
@@ -25,6 +26,16 @@ export default function Admin() {
     postToX: false,
     sponsorLogo: ''
   });
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCoverImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setNewPost(p => ({ ...p, sponsorLogo: reader.result as string }));
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   // === LOGIN ===
   const handleLogin = async () => {
@@ -89,8 +100,17 @@ export default function Admin() {
           password
         }),
       });
-      if (!res.ok) throw new Error('Failed to create post');
-      alert('Article created successfully!');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to create post');
+
+      if (data.x_error) {
+        alert(`Article created, but failed to post to X:\n${data.x_error}`);
+      } else if (data.x) {
+        alert(`Article created and posted to X!\n${data.x.tweet_url}`);
+      } else {
+        alert('Article created successfully!');
+      }
+
       setNewPost({ title: '', summary: '', content: '', postToX: false, sponsorLogo: '' });
       loadPosts();
     } catch (err: any) {
@@ -173,19 +193,49 @@ export default function Admin() {
 
           {/* Create new post */}
           <div className="border border-zinc-200 rounded-3xl p-6 mb-10">
-            <h2 className="text-2xl font-semibold mb-4">Create New Article</h2>
-            <input type="text" placeholder="Title" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} className="border p-3 w-full rounded-2xl mb-3" />
-            <input type="text" placeholder="Summary" value={newPost.summary} onChange={e => setNewPost({...newPost, summary: e.target.value})} className="border p-3 w-full rounded-2xl mb-3" />
-            <textarea placeholder="Content" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} className="border p-3 w-full rounded-2xl h-40 mb-4" />
+            <h2 className="text-2xl font-semibold mb-6">Create New Article</h2>
 
-            <label className="flex items-center gap-2 text-sm mb-4">
-              <input type="checkbox" checked={newPost.postToX} onChange={e => setNewPost({...newPost, postToX: e.target.checked})} />
+            {/* Title */}
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Title</label>
+            <input type="text" placeholder="Article title..." value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} className="border p-3 w-full rounded-2xl mb-4 text-lg font-medium" />
+
+            {/* Summary */}
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Summary <span className="text-zinc-400 font-normal">(shown as subtitle)</span></label>
+            <input type="text" placeholder="A short description of the article..." value={newPost.summary} onChange={e => setNewPost({...newPost, summary: e.target.value})} className="border p-3 w-full rounded-2xl mb-4" />
+
+            {/* Sponsor */}
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Sponsor Image <span className="text-zinc-400 font-normal">(adds "Sponsored Content" badge + hero image + footer attribution)</span></label>
+            <div className="flex gap-2 mb-2">
+              <input type="url" placeholder="Paste image URL..." value={newPost.sponsorLogo.startsWith('data:') ? '' : newPost.sponsorLogo} onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value})} className="border p-3 flex-1 rounded-2xl" />
+              <button type="button" onClick={() => coverImageInputRef.current?.click()} className="px-4 py-3 border border-zinc-200 rounded-2xl text-sm text-zinc-600 hover:bg-zinc-50 whitespace-nowrap">
+                📁 Upload from device
+              </button>
+              <input ref={coverImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverImageUpload} />
+            </div>
+            {newPost.sponsorLogo && (
+              <div className="mb-4 rounded-2xl overflow-hidden border border-zinc-200 h-48">
+                <img src={newPost.sponsorLogo} alt="Cover preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+              </div>
+            )}
+            {!newPost.sponsorLogo && <div className="mb-4" />}
+
+            {/* Content */}
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Content</label>
+            <div className="mb-6">
+              <RichTextEditor
+                value={newPost.content}
+                onChange={content => setNewPost({...newPost, content})}
+                placeholder="Write your article here..."
+              />
+            </div>
+
+            {/* Post to X */}
+            <label className="flex items-center gap-2 text-sm mb-6 cursor-pointer">
+              <input type="checkbox" checked={newPost.postToX} onChange={e => setNewPost({...newPost, postToX: e.target.checked})} className="w-4 h-4" />
               Also post to X.com
             </label>
 
-            <input type="text" placeholder="Sponsor logo URL (optional)" value={newPost.sponsorLogo} onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value})} className="border p-3 w-full rounded-2xl mb-6" />
-
-            <button onClick={createPost} className="bg-black text-white px-8 py-4 rounded-2xl">Create Article</button>
+            <button onClick={createPost} className="bg-black text-white px-8 py-4 rounded-2xl text-base font-medium w-full">Publish Article</button>
           </div>
 
           {/* Existing posts */}

@@ -7,9 +7,9 @@ type Props = {
 
 export default function Layout({ children }: Props) {
   return (
-    <main className="min-h-screen bg-neutral-50 text-gray-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <main className="min-h-screen bg-zinc-50 text-zinc-900">
       <div className="mx-auto max-w-3xl px-6 py-16">
-        <div className="rounded-2xl border border-neutral-200 bg-white/80 p-8 shadow-sm backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/60">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
           <header className="flex items-center justify-between">
             <Nav />
           </header>

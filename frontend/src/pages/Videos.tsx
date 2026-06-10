@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { API_BASE } from '../lib/config';
+import PageNav from '../components/PageNav';
 
 interface Video {
   id: number;
@@ -37,24 +37,18 @@ export default function Videos() {
     else { setViewMode('list'); setCompact(false); }
   };
 
-  if (loading) return <div className="max-w-6xl mx-auto p-8">Loading videos...</div>;
+  if (loading) return <div className="max-w-4xl mx-auto p-8">Loading videos...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12 bg-white min-h-screen">
-      {/* Back to Home Link */}
-      <Link
-        to="/"
-        className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-600 mb-8 font-medium"
-      >
-        ← Home
-      </Link>
-
+    <div className="bg-white min-h-screen">
+      <PageNav />
+      <div className="max-w-4xl mx-auto px-6 py-12">
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-5xl font-bold text-zinc-900">Videos</h1>
 
-        <div className="flex border border-zinc-200 rounded-3xl p-1 bg-white shadow-sm">
-          <button onClick={handleGridClick} className={`px-6 py-3 rounded-3xl transition-all ${viewMode === 'grid' ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}>Grid</button>
-          <button onClick={handleListClick} className={`px-6 py-3 rounded-3xl transition-all ${viewMode === 'list' ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}>List</button>
+        <div className="flex border border-zinc-200 rounded-2xl p-1 bg-white shadow-sm">
+          <button onClick={handleGridClick} className={`px-6 py-3 rounded-2xl transition-all ${viewMode === 'grid' ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}>Grid</button>
+          <button onClick={handleListClick} className={`px-6 py-3 rounded-2xl transition-all ${viewMode === 'list' ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}>List</button>
         </div>
       </div>
 
@@ -62,7 +56,7 @@ export default function Videos() {
       {viewMode === 'grid' && (
         <div className={`grid ${compact ? 'grid-cols-1 md:grid-cols-3 gap-6' : 'grid-cols-1 md:grid-cols-2 gap-8'}`}>
           {videos.map((video) => (
-            <div key={video.id} className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <div key={video.id} className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
               <div className="aspect-video">
                 <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${video.youtube_id}`} title={video.title} allowFullScreen className="w-full h-full" />
               </div>
@@ -85,7 +79,7 @@ export default function Videos() {
           {videos.map((video) => (
             <div
               key={video.id}
-              className={`flex gap-4 bg-white border border-zinc-200 rounded-3xl hover:shadow-md transition-shadow ${
+              className={`flex gap-4 bg-white border border-zinc-200 rounded-2xl hover:shadow-md transition-shadow ${
                 compact ? 'p-3' : 'p-6'
               }`}
             >
@@ -110,6 +104,7 @@ export default function Videos() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

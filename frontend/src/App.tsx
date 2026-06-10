@@ -46,7 +46,7 @@ function Home() {
   return (
     <Layout>
       {/* Profile Section */}
-      <Section title="Jamari Robinson">
+      <Section>
         {profile && (
           <div>
             <h1 className="text-5xl font-bold text-zinc-900">{profile.name}</h1>

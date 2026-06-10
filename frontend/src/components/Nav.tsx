@@ -4,8 +4,8 @@ function navLinkClass(isActive: boolean) {
   return [
     "text-sm transition",
     isActive
-      ? "text-gray-900 font-medium dark:text-white"
-      : "text-gray-500 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white",
+      ? "text-zinc-900 font-medium"
+      : "text-zinc-500 hover:text-zinc-900",
   ].join(" ");
 }
 
