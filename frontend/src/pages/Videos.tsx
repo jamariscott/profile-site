@@ -24,7 +24,7 @@ export default function Videos() {
         setVideos(data);
         setLoading(false);
       })
-      .catch(err => console.error(err));
+      .catch(err => { console.error(err); setLoading(false); });
   }, []);
 
   const handleGridClick = () => {

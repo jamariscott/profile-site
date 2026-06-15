@@ -1,31 +1,37 @@
-"backend/venv/" 
-"__pycache__/" 
-"*.pyc" 
-"*.pyo" 
-"*.pyd" 
-"database.db" 
-"*.env" 
-"backend/venv/" 
-"__pycache__/" 
-"*.pyc" 
-"*.pyo" 
-"*.pyd" 
-"database.db" 
-"*.env" 
-"backend/venv/" 
-"__pycache__/" 
-"*.pyc" 
-"database.db" 
-"*.env" 
-"backend/.env" 
-"backend/database.db" 
-"backend/venv/" 
-"__pycache__/" 
-"*.pyc" 
-"backend/.env" 
-"backend/database.db" 
-"backend/venv/" 
-"__pycache__/" 
-"*.pyc" 
-"backend/.env" 
-"backend/database.db" 
+# ---- Python / backend ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+backend/venv/
+backend/.venv/
+
+# Local SQLite databases
+*.db
+database.db
+backend/database.db
+
+# ---- Environment / secrets ----
+.env
+.env.*
+!.env.example
+backend/.env
+
+# ---- Node / frontend ----
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+*.local
+
+# ---- Vercel ----
+.vercel/
+frontend/.vercel/
+
+# ---- Editor / OS ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
