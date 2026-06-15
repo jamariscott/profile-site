@@ -21,33 +21,44 @@ from auth import (
     public_user,
 )
 
-# Idempotent: creates any missing tables on startup. Safe to run every boot —
-# it never drops or alters existing tables. This is how this project provisions
-# tables, since the Render start command does not run Alembic migrations.
-Base.metadata.create_all(bind=engine)
-
-
-def migrate_legacy_admins():
+def migrate_legacy_admins(db):
     """Copy any rows from the old `admin` table into `users` as role=admin so the
     existing site admin can log in through the unified accounts system. The bcrypt
     hash is carried over unchanged, so the same password keeps working."""
-    db = SessionLocal()
+    for a in db.query(Admin).all():
+        exists = db.query(User).filter(func.lower(User.username) == a.username.lower()).first()
+        if not exists:
+            db.add(User(
+                username=a.username,
+                email=None,
+                hashed_password=a.hashed_password,
+                role="admin",
+            ))
+    db.commit()
+
+
+def init_database():
+    """Create any missing tables and migrate the legacy admin on startup.
+
+    Wrapped in try/except so a transient database problem (e.g. a stale
+    DATABASE_URL password) logs a warning instead of crashing the whole service
+    on boot. The app still starts, and self-heals on the next boot once the
+    database is reachable again. Idempotent: never drops or alters existing
+    tables. (Render's start command doesn't run Alembic, so this provisions
+    tables.)"""
     try:
-        for a in db.query(Admin).all():
-            exists = db.query(User).filter(func.lower(User.username) == a.username.lower()).first()
-            if not exists:
-                db.add(User(
-                    username=a.username,
-                    email=None,
-                    hashed_password=a.hashed_password,
-                    role="admin",
-                ))
-        db.commit()
-    finally:
-        db.close()
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            migrate_legacy_admins(db)
+        finally:
+            db.close()
+        print("✅ Database initialized")
+    except Exception as e:
+        print(f"⚠️  Database init skipped (will retry on next boot): {e}")
 
 
-migrate_legacy_admins()
+init_database()
 
 # ---- Site settings (theme) ----
 DEFAULT_THEME = "classic"
@@ -200,6 +211,19 @@ async def login(data: dict, db: Session = Depends(get_db)):
 @app.get("/api/auth/me")
 async def whoami(user: User = Depends(get_current_user)):
     return {"user": public_user(user)}
+
+
+@app.post("/api/auth/change-password")
+async def change_password(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    current = data.get("current_password") or ""
+    new = data.get("new_password") or ""
+    if not verify_password(current, user.hashed_password):
+        raise HTTPException(400, "Current password is incorrect")
+    if len(new) < 8:
+        raise HTTPException(400, "New password must be at least 8 characters")
+    user.hashed_password = hash_password(new)
+    db.commit()
+    return {"message": "Password updated successfully"}
 
 
 @app.get("/api/me/comments")

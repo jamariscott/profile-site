@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PageNav from "../components/PageNav";
-import { apiJson } from "../lib/api";
+import { apiJson, apiFetch } from "../lib/api";
 import { useAuth, clearSession } from "../lib/auth";
 
 interface MyComment {
@@ -17,6 +17,39 @@ export default function Account() {
   const navigate = useNavigate();
   const [comments, setComments] = useState<MyComment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // change-password form
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [pwError, setPwError] = useState("");
+  const [pwNotice, setPwNotice] = useState("");
+  const [pwSubmitting, setPwSubmitting] = useState(false);
+
+  const changePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError("");
+    setPwNotice("");
+    if (newPw.length < 8) {
+      setPwError("New password must be at least 8 characters.");
+      return;
+    }
+    setPwSubmitting(true);
+    try {
+      const res = await apiFetch("/api/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ current_password: currentPw, new_password: newPw }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Could not change password");
+      setCurrentPw("");
+      setNewPw("");
+      setPwNotice("Password updated.");
+    } catch (err: any) {
+      setPwError(err?.message || "Could not change password");
+    } finally {
+      setPwSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!session) {
@@ -76,6 +109,38 @@ export default function Account() {
               Go to Admin Panel →
             </Link>
           )}
+        </div>
+
+        {/* Change password */}
+        <div className="border border-line bg-surface rounded-card p-6 mb-10 shadow-card">
+          <h2 className="text-lg font-semibold text-text mb-4">Change Password</h2>
+          <form onSubmit={changePassword} className="space-y-3 max-w-sm">
+            <input
+              type="password"
+              placeholder="Current password"
+              value={currentPw}
+              onChange={(e) => setCurrentPw(e.target.value)}
+              className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+              autoComplete="current-password"
+            />
+            <input
+              type="password"
+              placeholder="New password (min 8 characters)"
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+              autoComplete="new-password"
+            />
+            {pwError && <p className="text-danger text-sm">{pwError}</p>}
+            {pwNotice && <p className="text-success text-sm">{pwNotice}</p>}
+            <button
+              type="submit"
+              disabled={pwSubmitting || !currentPw || !newPw}
+              className="bg-accent text-accent-contrast px-6 py-2.5 rounded-btn font-medium disabled:opacity-50"
+            >
+              {pwSubmitting ? "Updating…" : "Update password"}
+            </button>
+          </form>
         </div>
 
         {/* My comments */}
