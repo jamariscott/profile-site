@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { API_BASE } from "../lib/config";
-import { getAdminSession } from "../lib/auth";
+import { isAdmin, authHeaders } from "../lib/auth";
 import { DEFAULT_THEME, isThemeId, type ThemeId } from "../lib/themes";
 
 const THEME_CACHE_KEY = "tzt_theme";
@@ -76,8 +76,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setTheme = useCallback(async (next: ThemeId) => {
-    const session = getAdminSession();
-    if (!session) {
+    if (!isAdmin()) {
       throw new Error("Not authorized: admin login required to change the theme.");
     }
 
@@ -88,12 +87,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_BASE}/api/admin/settings/theme`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: session.username,
-          password: session.password,
-          theme: next,
-        }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ theme: next }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

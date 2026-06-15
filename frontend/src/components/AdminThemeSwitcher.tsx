@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAdminSession } from "../lib/auth";
+import { useAuth } from "../lib/auth";
 import { useTheme } from "../theme/ThemeProvider";
 import { THEMES, type ThemeId } from "../lib/themes";
 
@@ -9,13 +9,13 @@ import { THEMES, type ThemeId } from "../lib/themes";
  * theme for all visitors.
  */
 export default function AdminThemeSwitcher() {
-  const admin = useAdminSession();
+  const session = useAuth();
   const { theme, setTheme, saving } = useTheme();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
 
-  // Only the admin sees this control.
-  if (!admin) return null;
+  // Only an admin sees this control.
+  if (session?.user.role !== "admin") return null;
 
   const handlePick = async (id: ThemeId) => {
     if (id === theme) return;

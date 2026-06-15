@@ -1,29 +1,31 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * Centralized admin session.
- *
- * NOTE (tech debt): the current backend authorizes every admin action with
- * username + password in the request body, so we persist both here to keep the
- * admin "logged in" across pages (needed for the floating theme switcher).
- * This is the existing app's auth model. It will be replaced with proper token
- * (JWT) auth during the accounts/membership phase — at which point only a token
- * is stored here and this is the single file to change.
+ * Auth session: a JWT token + the public user object returned by the backend.
+ * The password is never stored — only the bearer token. This is the single
+ * source of truth for "who is logged in" across the app.
  */
 
-const STORAGE_KEY = "tzt_admin_session";
+const STORAGE_KEY = "tzt_auth";
 
-export interface AdminSession {
+export interface AuthUser {
+  id: number;
   username: string;
-  password: string;
+  email: string | null;
+  role: string; // "admin" | "member"
 }
 
-// Cache so getSnapshot() returns a stable reference while storage is unchanged
+export interface AuthSession {
+  token: string;
+  user: AuthUser;
+}
+
+// Cached snapshot so getSnapshot() is stable between storage changes
 // (required by useSyncExternalStore to avoid render loops).
 let cachedRaw: string | null = null;
-let cachedSession: AdminSession | null = null;
+let cachedSession: AuthSession | null = null;
 
-export function getAdminSession(): AdminSession | null {
+export function getSession(): AuthSession | null {
   let raw: string | null = null;
   try {
     raw = localStorage.getItem(STORAGE_KEY);
@@ -38,36 +40,55 @@ export function getAdminSession(): AdminSession | null {
   }
   try {
     const parsed = JSON.parse(raw);
-    cachedSession =
-      parsed && typeof parsed.username === "string" && typeof parsed.password === "string"
-        ? { username: parsed.username, password: parsed.password }
-        : null;
+    if (parsed && typeof parsed.token === "string" && parsed.user && typeof parsed.user.username === "string") {
+      cachedSession = parsed as AuthSession;
+    } else {
+      cachedSession = null;
+    }
   } catch {
     cachedSession = null;
   }
   return cachedSession;
 }
 
-export function isAdmin(): boolean {
-  return getAdminSession() !== null;
+export function getToken(): string | null {
+  return getSession()?.token ?? null;
 }
 
-export function setAdminSession(session: AdminSession): void {
+export function getUser(): AuthUser | null {
+  return getSession()?.user ?? null;
+}
+
+export function isAuthenticated(): boolean {
+  return getSession() !== null;
+}
+
+export function isAdmin(): boolean {
+  return getUser()?.role === "admin";
+}
+
+export function setSession(session: AuthSession): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   } catch {
-    /* ignore storage failures */
+    /* ignore */
   }
   notify();
 }
 
-export function clearAdminSession(): void {
+export function clearSession(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
     /* ignore */
   }
   notify();
+}
+
+/** Authorization header for authenticated requests (empty object if logged out). */
+export function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 // --- reactivity ---
@@ -89,7 +110,7 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/** React hook: re-renders when the admin session changes (incl. across tabs). */
-export function useAdminSession(): AdminSession | null {
-  return useSyncExternalStore(subscribe, getAdminSession, () => null);
+/** React hook: re-renders when the auth session changes (incl. across tabs). */
+export function useAuth(): AuthSession | null {
+  return useSyncExternalStore(subscribe, getSession, () => null);
 }

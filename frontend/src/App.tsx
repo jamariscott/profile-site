@@ -9,6 +9,9 @@ import Card from "./components/Card";
 import Writing from "./pages/Writing";
 import WritingPost from "./pages/WritingPost";
 import Videos from "./pages/Videos";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Account from "./pages/Account";
 import AdminThemeSwitcher from "./components/AdminThemeSwitcher";
 
 import { API_BASE } from "./lib/config";
@@ -21,6 +24,9 @@ export default function App() {
         <Route path="/writing" element={<Writing />} />
         <Route path="/writing/:slug" element={<WritingPost />} />
         <Route path="/videos" element={<Videos />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
       <AdminThemeSwitcher />

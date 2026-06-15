@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.sql import func
 from database import Base
 
@@ -60,3 +60,28 @@ class Setting(Base):
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String, unique=True, index=True, nullable=False)
     value = Column(String, nullable=False)
+
+# Member/admin accounts. Anyone can register (role defaults to "member");
+# the existing site admin is migrated in as role="admin".
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    # email is unique when present; nullable so the migrated legacy admin (which
+    # had no email) can exist until it sets one.
+    email = Column(String, unique=True, index=True, nullable=True)
+    hashed_password = Column(String, nullable=False)
+    role = Column(String, nullable=False, default="member")  # "member" | "admin"
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=func.now())
+
+# Comments on Writing posts. Admin-moderated: created as "pending", shown
+# publicly only once "approved".
+class Comment(Base):
+    __tablename__ = "comments"
+    id = Column(Integer, primary_key=True, index=True)
+    writing_slug = Column(String, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    body = Column(Text, nullable=False)
+    status = Column(String, nullable=False, default="pending", index=True)  # "pending" | "approved"
+    created_at = Column(DateTime, default=func.now())

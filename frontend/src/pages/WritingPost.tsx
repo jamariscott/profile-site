@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { API_BASE } from '../lib/config';
 import PageNav from '../components/PageNav';
+import Comments from '../components/Comments';
 
 interface WritingPost {
   slug: string;
@@ -98,6 +99,8 @@ export default function WritingPost() {
             </div>
           </div>
         )}
+
+        <Comments slug={post.slug} />
       </article>
     </div>
   );

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { API_BASE } from '../lib/config';
+import { Link } from 'react-router-dom';
 import RichTextEditor from '../components/RichTextEditor';
-import { getAdminSession, setAdminSession, clearAdminSession } from '../lib/auth';
+import PageNav from '../components/PageNav';
+import { apiFetch, apiJson } from '../lib/api';
+import { useAuth, setSession, clearSession, type AuthSession } from '../lib/auth';
 
 interface WritingPost {
   slug: string;
@@ -12,11 +14,25 @@ interface WritingPost {
   x_posted: boolean;
 }
 
+interface PendingComment {
+  id: number;
+  body: string;
+  author: string;
+  writing_slug: string;
+  status: string;
+  created_at: string | null;
+}
+
 export default function Admin() {
+  const session = useAuth();
+  const isAdmin = session?.user.role === 'admin';
+
   const [posts, setPosts] = useState<WritingPost[]>([]);
-  const [username, setUsername] = useState(() => getAdminSession()?.username ?? '');
-  const [password, setPassword] = useState(() => getAdminSession()?.password ?? '');
-  const [isLoggedIn, setIsLoggedIn] = useState(() => getAdminSession() !== null);
+  const [comments, setComments] = useState<PendingComment[]>([]);
+
+  // login form
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -38,32 +54,48 @@ export default function Admin() {
     e.target.value = '';
   };
 
-  // === LOGIN ===
+  // === DATA LOADERS ===
+  const loadPosts = async () => {
+    try {
+      const data = await apiJson<WritingPost[]>('/api/admin/writing');
+      setPosts(data);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const loadComments = async () => {
+    try {
+      const data = await apiJson<PendingComment[]>('/api/admin/comments?status=pending');
+      setComments(data);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadPosts();
+      loadComments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
+
+  // === AUTH ===
   const handleLogin = async () => {
-    if (!username || !password) {
-      setError('Please enter both username and password');
+    if (!identifier || !password) {
+      setError('Please enter your username/email and password');
       return;
     }
-
     setLoading(true);
     setError('');
-
     try {
-      const res = await fetch(`${API_BASE}/api/admin/login`, {
+      const data = await apiJson<AuthSession>('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ identifier, password }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.detail || 'Login failed');
-      }
-
-      setAdminSession({ username, password });
-      setIsLoggedIn(true);
-      loadPosts();
+      setSession(data);
+      setPassword('');
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
@@ -72,48 +104,21 @@ export default function Admin() {
   };
 
   const handleLogout = () => {
-    clearAdminSession();
-    setIsLoggedIn(false);
-    setPassword('');
+    clearSession();
     setPosts([]);
+    setComments([]);
   };
 
-  // If a stored session exists, load posts on mount.
-  useEffect(() => {
-    if (isLoggedIn) loadPosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // === LOAD POSTS ===
-  const loadPosts = async () => {
-    setError('');
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/admin/writing?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-      );
-      if (!res.ok) throw new Error('Failed to load posts');
-      const data = await res.json();
-      setPosts(data);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  // === CREATE POST ===
+  // === ARTICLES ===
   const createPost = async () => {
     if (!newPost.title || !newPost.content) {
-      alert("Title and content are required");
+      alert('Title and content are required');
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/api/admin/writing`, {
+      const res = await apiFetch('/api/admin/writing', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newPost,
-          username,
-          password
-        }),
+        body: JSON.stringify(newPost),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Failed to create post');
@@ -133,15 +138,10 @@ export default function Admin() {
     }
   };
 
-  // === PUBLISH TO X ===
   const publishToX = async (slug: string) => {
     if (!confirm('Publish this post to X.com now?')) return;
     try {
-      const res = await fetch(`${API_BASE}/api/admin/publish-to-x/${slug}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
+      const res = await apiFetch(`/api/admin/publish-to-x/${slug}`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to publish');
       alert('Marked as posted to X');
       loadPosts();
@@ -150,44 +150,60 @@ export default function Admin() {
     }
   };
 
-  // === DELETE POST ===
   const deletePost = async (slug: string, title: string) => {
     if (!confirm(`Delete "${title}" permanently? This cannot be undone.`)) return;
-
     try {
-      const res = await fetch(`${API_BASE}/api/admin/writing/${slug}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-
+      const res = await apiFetch(`/api/admin/writing/${slug}`, { method: 'DELETE' });
       if (res.ok) {
         alert('Post deleted successfully');
         loadPosts();
       } else {
         alert('Failed to delete post');
       }
-    } catch (err) {
+    } catch {
       alert('Error deleting post');
     }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-4xl font-bold mb-8">Admin Panel</h1>
+  // === COMMENT MODERATION ===
+  const approveComment = async (id: number) => {
+    try {
+      const res = await apiFetch(`/api/admin/comments/${id}/approve`, { method: 'PUT' });
+      if (!res.ok) throw new Error('Failed to approve');
+      loadComments();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
-      {!isLoggedIn ? (
-        <div className="max-w-md">
+  const deleteComment = async (id: number) => {
+    if (!confirm('Delete this comment?')) return;
+    try {
+      const res = await apiFetch(`/api/admin/comments/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      loadComments();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  // === RENDER: not logged in ===
+  if (!session) {
+    return (
+      <div className="bg-bg min-h-screen">
+        <PageNav />
+        <div className="max-w-md mx-auto px-6 py-16">
+          <h1 className="text-3xl font-bold text-text mb-6">Admin Login</h1>
           <input
             type="text"
-            placeholder="Username"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
+            placeholder="Username or email"
+            value={identifier}
+            onChange={e => setIdentifier(e.target.value)}
             className="border border-line bg-surface text-text p-4 w-full rounded-btn text-lg mb-4"
           />
           <input
             type="password"
-            placeholder="Enter admin password"
+            placeholder="Password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             className="border border-line bg-surface text-text p-4 w-full rounded-btn text-lg mb-4"
@@ -202,99 +218,153 @@ export default function Admin() {
           </button>
           {error && <p className="text-danger mt-4">{error}</p>}
         </div>
-      ) : (
-        <div>
-          <div className="flex justify-end mb-6">
-            <button onClick={handleLogout} className="text-sm text-muted hover:text-text transition-colors">
-              Log out
-            </button>
-          </div>
-          {error && <p className="text-danger mb-6 p-4 bg-surface-2 rounded-btn">{error}</p>}
+      </div>
+    );
+  }
 
-          {/* Create new post */}
-          <div className="border border-line rounded-card p-6 mb-10">
-            <h2 className="text-2xl font-semibold mb-6">Create New Article</h2>
-
-            {/* Title */}
-            <label className="block text-sm font-medium text-muted mb-1">Title</label>
-            <input type="text" placeholder="Article title..." value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} className="border border-line bg-surface text-text p-3 w-full rounded-btn mb-4 text-lg font-medium" />
-
-            {/* Summary */}
-            <label className="block text-sm font-medium text-muted mb-1">Summary <span className="text-subtle font-normal">(shown as subtitle)</span></label>
-            <input type="text" placeholder="A short description of the article..." value={newPost.summary} onChange={e => setNewPost({...newPost, summary: e.target.value})} className="border border-line bg-surface text-text p-3 w-full rounded-btn mb-4" />
-
-            {/* Sponsor */}
-            <label className="block text-sm font-medium text-muted mb-1">Sponsor Image <span className="text-subtle font-normal">(adds "Sponsored Content" badge + hero image + footer attribution)</span></label>
-            <div className="flex gap-2 mb-2">
-              <input type="url" placeholder="Paste image URL..." value={newPost.sponsorLogo.startsWith('data:') ? '' : newPost.sponsorLogo} onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value})} className="border border-line bg-surface text-text p-3 flex-1 rounded-btn" />
-              <button type="button" onClick={() => coverImageInputRef.current?.click()} className="px-4 py-3 border border-line rounded-2xl text-sm text-muted hover:bg-surface-2 whitespace-nowrap">
-                📁 Upload from device
-              </button>
-              <input ref={coverImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverImageUpload} />
-            </div>
-            {newPost.sponsorLogo && (
-              <div className="mb-4 rounded-2xl overflow-hidden border border-line h-48">
-                <img src={newPost.sponsorLogo} alt="Cover preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
-              </div>
-            )}
-            {!newPost.sponsorLogo && <div className="mb-4" />}
-
-            {/* Content */}
-            <label className="block text-sm font-medium text-muted mb-1">Content</label>
-            <div className="mb-6">
-              <RichTextEditor
-                value={newPost.content}
-                onChange={content => setNewPost({...newPost, content})}
-                placeholder="Write your article here..."
-              />
-            </div>
-
-            {/* Post to X */}
-            <label className="flex items-center gap-2 text-sm mb-6 cursor-pointer">
-              <input type="checkbox" checked={newPost.postToX} onChange={e => setNewPost({...newPost, postToX: e.target.checked})} className="w-4 h-4" />
-              Also post to X.com
-            </label>
-
-            <button onClick={createPost} className="bg-accent text-accent-contrast px-8 py-4 rounded-2xl text-base font-medium w-full">Publish Article</button>
-          </div>
-
-          {/* Existing posts */}
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold">Existing Articles</h2>
-            <button onClick={loadPosts} className="text-sm text-muted hover:text-muted">Refresh</button>
-          </div>
-
-          <div className="space-y-4">
-            {posts.length === 0 && <p className="text-muted">No posts yet.</p>}
-            {posts.map(post => (
-              <div key={post.slug} className="border border-line rounded-card p-6 flex justify-between items-center">
-                <div>
-                  <h3 className="font-semibold">{post.title}</h3>
-                  <p className="text-sm text-muted">{post.date}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  {post.x_posted ? (
-                    <span className="text-success text-sm">Posted to X</span>
-                  ) : (
-                    <button
-                      onClick={() => publishToX(post.slug)}
-                      className="text-accent hover:text-accent-hover text-sm"
-                    >
-                      Publish to X now
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deletePost(post.slug, post.title)}
-                    className="text-danger hover:text-red-700 text-sm"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+  // === RENDER: logged in but not admin ===
+  if (!isAdmin) {
+    return (
+      <div className="bg-bg min-h-screen">
+        <PageNav />
+        <div className="max-w-md mx-auto px-6 py-16 text-center">
+          <h1 className="text-3xl font-bold text-text mb-3">Admins only</h1>
+          <p className="text-muted mb-6">
+            You're logged in as <strong>{session.user.username}</strong>, but this area is restricted to admins.
+          </p>
+          <Link to="/account" className="text-accent hover:text-accent-hover font-medium">
+            Go to your account →
+          </Link>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  // === RENDER: admin ===
+  return (
+    <div className="bg-bg min-h-screen">
+      <PageNav />
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-text">Admin Panel</h1>
+          <button onClick={handleLogout} className="text-sm text-muted hover:text-text transition-colors">
+            Log out
+          </button>
+        </div>
+
+        {error && <p className="text-danger mb-6 p-4 bg-surface-2 rounded-btn">{error}</p>}
+
+        {/* Pending comments */}
+        <div className="border border-line rounded-card p-6 mb-10">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold text-text">
+              Pending Comments {comments.length > 0 && <span className="text-accent">({comments.length})</span>}
+            </h2>
+            <button onClick={loadComments} className="text-sm text-muted hover:text-text">Refresh</button>
+          </div>
+          {comments.length === 0 ? (
+            <p className="text-muted text-sm">No comments awaiting review.</p>
+          ) : (
+            <div className="space-y-3">
+              {comments.map(c => (
+                <div key={c.id} className="border border-line rounded-btn p-4">
+                  <div className="flex items-center justify-between mb-1 text-sm">
+                    <span className="text-text font-medium">{c.author}</span>
+                    <span className="text-subtle">on {c.writing_slug}</span>
+                  </div>
+                  <p className="text-text text-sm whitespace-pre-wrap mb-3">{c.body}</p>
+                  <div className="flex gap-4">
+                    <button onClick={() => approveComment(c.id)} className="text-success text-sm font-medium hover:opacity-80">
+                      Approve
+                    </button>
+                    <button onClick={() => deleteComment(c.id)} className="text-danger text-sm font-medium hover:opacity-80">
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Create new post */}
+        <div className="border border-line rounded-card p-6 mb-10">
+          <h2 className="text-2xl font-semibold mb-6 text-text">Create New Article</h2>
+
+          <label className="block text-sm font-medium text-muted mb-1">Title</label>
+          <input type="text" placeholder="Article title..." value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} className="border border-line bg-surface text-text p-3 w-full rounded-btn mb-4 text-lg font-medium" />
+
+          <label className="block text-sm font-medium text-muted mb-1">Summary <span className="text-subtle font-normal">(shown as subtitle)</span></label>
+          <input type="text" placeholder="A short description of the article..." value={newPost.summary} onChange={e => setNewPost({...newPost, summary: e.target.value})} className="border border-line bg-surface text-text p-3 w-full rounded-btn mb-4" />
+
+          <label className="block text-sm font-medium text-muted mb-1">Sponsor Image <span className="text-subtle font-normal">(adds "Sponsored Content" badge + hero image + footer attribution)</span></label>
+          <div className="flex gap-2 mb-2">
+            <input type="url" placeholder="Paste image URL..." value={newPost.sponsorLogo.startsWith('data:') ? '' : newPost.sponsorLogo} onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value})} className="border border-line bg-surface text-text p-3 flex-1 rounded-btn" />
+            <button type="button" onClick={() => coverImageInputRef.current?.click()} className="px-4 py-3 border border-line rounded-btn text-sm text-muted hover:bg-surface-2 whitespace-nowrap">
+              📁 Upload from device
+            </button>
+            <input ref={coverImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverImageUpload} />
+          </div>
+          {newPost.sponsorLogo && (
+            <div className="mb-4 rounded-card overflow-hidden border border-line h-48">
+              <img src={newPost.sponsorLogo} alt="Cover preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+            </div>
+          )}
+          {!newPost.sponsorLogo && <div className="mb-4" />}
+
+          <label className="block text-sm font-medium text-muted mb-1">Content</label>
+          <div className="mb-6">
+            <RichTextEditor
+              value={newPost.content}
+              onChange={content => setNewPost({...newPost, content})}
+              placeholder="Write your article here..."
+            />
+          </div>
+
+          <label className="flex items-center gap-2 text-sm mb-6 cursor-pointer text-text">
+            <input type="checkbox" checked={newPost.postToX} onChange={e => setNewPost({...newPost, postToX: e.target.checked})} className="w-4 h-4" />
+            Also post to X.com
+          </label>
+
+          <button onClick={createPost} className="bg-accent text-accent-contrast px-8 py-4 rounded-btn text-base font-medium w-full">Publish Article</button>
+        </div>
+
+        {/* Existing posts */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-semibold text-text">Existing Articles</h2>
+          <button onClick={loadPosts} className="text-sm text-muted hover:text-text">Refresh</button>
+        </div>
+
+        <div className="space-y-4">
+          {posts.length === 0 && <p className="text-muted">No posts yet.</p>}
+          {posts.map(post => (
+            <div key={post.slug} className="border border-line rounded-card p-6 flex justify-between items-center">
+              <div>
+                <h3 className="font-semibold text-text">{post.title}</h3>
+                <p className="text-sm text-muted">{post.date}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                {post.x_posted ? (
+                  <span className="text-success text-sm">Posted to X</span>
+                ) : (
+                  <button
+                    onClick={() => publishToX(post.slug)}
+                    className="text-accent hover:text-accent-hover text-sm"
+                  >
+                    Publish to X now
+                  </button>
+                )}
+                <button
+                  onClick={() => deletePost(post.slug, post.title)}
+                  className="text-danger hover:opacity-80 text-sm"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
