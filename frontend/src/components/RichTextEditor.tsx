@@ -22,7 +22,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     extensions: [
       StarterKit,
       Image.configure({ inline: false, allowBase64: true }),
-      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-blue-600 underline' } }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-accent underline' } }),
       Placeholder.configure({ placeholder: placeholder || 'Write your article here...' }),
     ],
     content: value,
@@ -84,8 +84,8 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
       title={title}
       className={`px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${
         active
-          ? 'bg-zinc-900 text-white'
-          : 'text-zinc-600 hover:bg-zinc-100'
+          ? 'bg-accent text-accent-contrast'
+          : 'text-muted hover:bg-surface-2'
       }`}
     >
       {children}
@@ -93,9 +93,9 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   );
 
   return (
-    <div className="border border-zinc-200 rounded-2xl overflow-hidden">
+    <div className="border border-line rounded-btn overflow-hidden">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-zinc-200 bg-zinc-50">
+      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-line bg-surface-2">
         {/* Text style */}
         <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold">
           <strong>B</strong>
@@ -104,7 +104,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           <em>I</em>
         </ToolbarBtn>
 
-        <div className="w-px h-5 bg-zinc-200 mx-1" />
+        <div className="w-px h-5 bg-line mx-1" />
 
         {/* Headings */}
         <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Heading 2">
@@ -114,7 +114,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           H3
         </ToolbarBtn>
 
-        <div className="w-px h-5 bg-zinc-200 mx-1" />
+        <div className="w-px h-5 bg-line mx-1" />
 
         {/* Lists */}
         <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet list">
@@ -124,14 +124,14 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           1. List
         </ToolbarBtn>
 
-        <div className="w-px h-5 bg-zinc-200 mx-1" />
+        <div className="w-px h-5 bg-line mx-1" />
 
         {/* Blockquote */}
         <ToolbarBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Blockquote">
           ❝
         </ToolbarBtn>
 
-        <div className="w-px h-5 bg-zinc-200 mx-1" />
+        <div className="w-px h-5 bg-line mx-1" />
 
         {/* Link */}
         <ToolbarBtn onClick={() => { setShowLinkInput(!showLinkInput); setShowImageInput(false); }} active={editor.isActive('link')} title="Add link">
@@ -155,7 +155,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           onChange={handleFileUpload}
         />
 
-        <div className="w-px h-5 bg-zinc-200 mx-1" />
+        <div className="w-px h-5 bg-line mx-1" />
 
         {/* Clear formatting */}
         <ToolbarBtn onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} active={false} title="Clear formatting">
@@ -165,42 +165,42 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
       {/* Image URL input */}
       {showImageInput && (
-        <div className="flex gap-2 p-2 border-b border-zinc-200 bg-blue-50">
+        <div className="flex gap-2 p-2 border-b border-line bg-surface-2">
           <input
             type="url"
             placeholder="Paste image URL..."
             value={imageUrl}
             onChange={e => setImageUrl(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addImage()}
-            className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg"
+            className="flex-1 px-3 py-1.5 text-sm border border-line bg-surface text-text rounded-lg"
             autoFocus
           />
-          <button type="button" onClick={addImage} className="px-3 py-1.5 bg-zinc-900 text-white text-sm rounded-lg">Insert</button>
-          <button type="button" onClick={() => setShowImageInput(false)} className="px-3 py-1.5 text-zinc-500 text-sm">Cancel</button>
+          <button type="button" onClick={addImage} className="px-3 py-1.5 bg-accent text-accent-contrast text-sm rounded-lg">Insert</button>
+          <button type="button" onClick={() => setShowImageInput(false)} className="px-3 py-1.5 text-muted text-sm">Cancel</button>
         </div>
       )}
 
       {/* Link URL input */}
       {showLinkInput && (
-        <div className="flex gap-2 p-2 border-b border-zinc-200 bg-blue-50">
+        <div className="flex gap-2 p-2 border-b border-line bg-surface-2">
           <input
             type="url"
             placeholder="Paste link URL..."
             value={linkUrl}
             onChange={e => setLinkUrl(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addLink()}
-            className="flex-1 px-3 py-1.5 text-sm border border-zinc-200 rounded-lg"
+            className="flex-1 px-3 py-1.5 text-sm border border-line bg-surface text-text rounded-lg"
             autoFocus
           />
-          <button type="button" onClick={addLink} className="px-3 py-1.5 bg-zinc-900 text-white text-sm rounded-lg">Insert</button>
-          <button type="button" onClick={() => setShowLinkInput(false)} className="px-3 py-1.5 text-zinc-500 text-sm">Cancel</button>
+          <button type="button" onClick={addLink} className="px-3 py-1.5 bg-accent text-accent-contrast text-sm rounded-lg">Insert</button>
+          <button type="button" onClick={() => setShowLinkInput(false)} className="px-3 py-1.5 text-muted text-sm">Cancel</button>
         </div>
       )}
 
       {/* Editor area */}
       <EditorContent
         editor={editor}
-        className="prose prose-zinc max-w-none p-4 min-h-64 focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap]:caret-zinc-900 [&_.tiptap]:cursor-text [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.tiptap_p.is-editor-empty:first-child::before]:text-zinc-400 [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none"
+        className="prose max-w-none p-4 min-h-64 focus-within:outline-none"
       />
     </div>
   );

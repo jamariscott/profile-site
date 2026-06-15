@@ -40,15 +40,15 @@ export default function Videos() {
   if (loading) return <div className="max-w-4xl mx-auto p-8">Loading videos...</div>;
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-bg min-h-screen">
       <PageNav />
       <div className="max-w-4xl mx-auto px-6 py-12">
       <div className="flex justify-between items-center mb-10">
-        <h1 className="text-5xl font-bold text-zinc-900">Videos</h1>
+        <h1 className="text-5xl font-bold text-text">Videos</h1>
 
-        <div className="flex border border-zinc-200 rounded-2xl p-1 bg-white shadow-sm">
-          <button onClick={handleGridClick} className={`px-6 py-3 rounded-2xl transition-all ${viewMode === 'grid' ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}>Grid</button>
-          <button onClick={handleListClick} className={`px-6 py-3 rounded-2xl transition-all ${viewMode === 'list' ? 'bg-zinc-900 text-white' : 'text-zinc-600 hover:bg-zinc-100'}`}>List</button>
+        <div className="flex border border-line rounded-btn p-1 bg-surface shadow-card">
+          <button onClick={handleGridClick} className={`px-6 py-3 rounded-btn transition-all ${viewMode === 'grid' ? 'bg-accent text-accent-contrast' : 'text-muted hover:bg-surface-2'}`}>Grid</button>
+          <button onClick={handleListClick} className={`px-6 py-3 rounded-btn transition-all ${viewMode === 'list' ? 'bg-accent text-accent-contrast' : 'text-muted hover:bg-surface-2'}`}>List</button>
         </div>
       </div>
 
@@ -56,17 +56,17 @@ export default function Videos() {
       {viewMode === 'grid' && (
         <div className={`grid ${compact ? 'grid-cols-1 md:grid-cols-3 gap-6' : 'grid-cols-1 md:grid-cols-2 gap-8'}`}>
           {videos.map((video) => (
-            <div key={video.id} className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <div key={video.id} className="bg-surface border border-line rounded-card overflow-hidden shadow-card hover:shadow-md transition-shadow">
               <div className="aspect-video">
                 <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${video.youtube_id}`} title={video.title} allowFullScreen className="w-full h-full" />
               </div>
               <div className={compact ? "p-5" : "p-8"}>
                 <div className="flex justify-between text-sm mb-3">
-                  <span className="text-zinc-500">{video.date}</span>
-                  <span className="text-zinc-400">{video.duration}</span>
+                  <span className="text-muted">{video.date}</span>
+                  <span className="text-subtle">{video.duration}</span>
                 </div>
-                <h2 className="text-xl font-semibold text-zinc-900 mb-2">{video.title}</h2>
-                <p className="text-zinc-600 text-sm line-clamp-3">{video.description}</p>
+                <h2 className="text-xl font-semibold text-text mb-2">{video.title}</h2>
+                <p className="text-muted text-sm line-clamp-3">{video.description}</p>
               </div>
             </div>
           ))}
@@ -79,7 +79,7 @@ export default function Videos() {
           {videos.map((video) => (
             <div
               key={video.id}
-              className={`flex gap-4 bg-white border border-zinc-200 rounded-2xl hover:shadow-md transition-shadow ${
+              className={`flex gap-4 bg-surface border border-line rounded-card hover:shadow-md transition-shadow ${
                 compact ? 'p-3' : 'p-6'
               }`}
             >
@@ -89,14 +89,14 @@ export default function Videos() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex justify-between text-xs text-zinc-500 mb-1">
+                <div className="flex justify-between text-xs text-muted mb-1">
                   <span>{video.date}</span>
                   <span>{video.duration}</span>
                 </div>
-                <h2 className={`font-semibold text-zinc-900 ${compact ? 'text-base' : 'text-2xl'} mb-1`}>
+                <h2 className={`font-semibold text-text ${compact ? 'text-base' : 'text-2xl'} mb-1`}>
                   {video.title}
                 </h2>
-                <p className={`text-zinc-600 ${compact ? 'text-xs line-clamp-2' : 'line-clamp-3'}`}>
+                <p className={`text-muted ${compact ? 'text-xs line-clamp-2' : 'line-clamp-3'}`}>
                   {video.description}
                 </p>
               </div>

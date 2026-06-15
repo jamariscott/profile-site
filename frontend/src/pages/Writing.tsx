@@ -42,11 +42,11 @@ export default function Writing() {
   if (loading) return <div className="max-w-5xl mx-auto p-8">Loading writing...</div>;
 
   if (posts.length === 0) return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-bg min-h-screen">
       <PageNav />
       <div className="max-w-5xl mx-auto px-6 py-12">
-        <h1 className="text-5xl font-bold text-zinc-900 mb-10">Writing</h1>
-        <p className="text-zinc-500">No posts yet.</p>
+        <h1 className="text-5xl font-bold text-text mb-10">Writing</h1>
+        <p className="text-muted">No posts yet.</p>
       </div>
     </div>
   );
@@ -55,10 +55,10 @@ export default function Writing() {
   const heroThumb = extractThumbnail(hero);
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-bg min-h-screen">
       <PageNav />
       <div className="max-w-5xl mx-auto px-6 py-12">
-        <h1 className="text-5xl font-bold text-zinc-900 mb-10">Writing</h1>
+        <h1 className="text-5xl font-bold text-text mb-10">Writing</h1>
 
         {/* Hero featured article */}
         <Link to={`/writing/${hero.slug}`} className="block group mb-12">
@@ -73,20 +73,20 @@ export default function Writing() {
           )}
           <div className="flex items-center gap-3 mb-3">
             {hero.sponsor_logo && (
-              <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400 border border-zinc-200 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-semibold tracking-widest uppercase text-subtle border border-line px-2 py-0.5 rounded-full">
                 Sponsored
               </span>
             )}
-            <span className="text-sm text-zinc-500">{hero.date}</span>
+            <span className="text-sm text-muted">{hero.date}</span>
           </div>
-          <h2 className="text-4xl font-bold text-zinc-900 group-hover:text-zinc-700 transition-colors leading-tight mb-3">
+          <h2 className="text-4xl font-bold text-text group-hover:text-muted transition-colors leading-tight mb-3">
             {hero.title}
           </h2>
-          <p className="text-zinc-600 text-lg line-clamp-3">{hero.summary}</p>
+          <p className="text-muted text-lg line-clamp-3">{hero.summary}</p>
         </Link>
 
         {/* Divider */}
-        {rest.length > 0 && <hr className="border-zinc-200 mb-10" />}
+        {rest.length > 0 && <hr className="border-line mb-10" />}
 
         {/* 2-column card grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -105,16 +105,16 @@ export default function Writing() {
                 )}
                 <div className="flex items-center gap-2 mb-2">
                   {post.sponsor_logo && (
-                    <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400 border border-zinc-200 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-semibold tracking-widest uppercase text-subtle border border-line px-2 py-0.5 rounded-full">
                       Sponsored
                     </span>
                   )}
-                  <span className="text-xs text-zinc-500">{post.date}</span>
+                  <span className="text-xs text-muted">{post.date}</span>
                 </div>
-                <h2 className="text-xl font-bold text-zinc-900 group-hover:text-zinc-700 transition-colors leading-snug mb-2">
+                <h2 className="text-xl font-bold text-text group-hover:text-muted transition-colors leading-snug mb-2">
                   {post.title}
                 </h2>
-                <p className="text-zinc-600 text-sm line-clamp-3">{post.summary}</p>
+                <p className="text-muted text-sm line-clamp-3">{post.summary}</p>
               </Link>
             );
           })}

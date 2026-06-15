@@ -37,7 +37,7 @@ export default function WritingPost() {
   const isSponsored = !!post.sponsor_logo;
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-bg min-h-screen">
       <PageNav />
       <article className="pb-24">
         {/* Header */}
@@ -45,19 +45,19 @@ export default function WritingPost() {
           {/* Sponsored badge */}
           {isSponsored && (
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400 border border-zinc-200 px-3 py-1 rounded-full">
+              <span className="text-xs font-semibold tracking-widest uppercase text-subtle border border-line px-3 py-1 rounded-full">
                 Sponsored Content
               </span>
             </div>
           )}
 
-          <h1 className="text-4xl md:text-5xl font-bold text-zinc-900 leading-tight mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold text-text leading-tight mb-4">
             {post.title}
           </h1>
           {post.summary && (
-            <p className="text-xl text-zinc-500 leading-relaxed mb-4">{post.summary}</p>
+            <p className="text-xl text-muted leading-relaxed mb-4">{post.summary}</p>
           )}
-          <p className="text-sm text-zinc-400">{post.date}</p>
+          <p className="text-sm text-subtle">{post.date}</p>
         </header>
 
         {/* Hero / sponsor image */}
@@ -74,27 +74,25 @@ export default function WritingPost() {
 
         {/* Article body */}
         <div
-          className="max-w-3xl mx-auto px-6 prose prose-zinc prose-lg max-w-none
-            prose-headings:font-bold prose-headings:text-zinc-900
-            prose-p:text-zinc-700 prose-p:leading-relaxed
-            prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
+          className="max-w-3xl mx-auto px-6 prose prose-lg max-w-none
+            prose-headings:font-bold prose-p:leading-relaxed
+            prose-a:no-underline hover:prose-a:underline
             prose-img:rounded-2xl prose-img:shadow-md prose-img:my-8 prose-img:w-full
-            prose-blockquote:border-l-4 prose-blockquote:border-zinc-300 prose-blockquote:text-zinc-500 prose-blockquote:italic
-            prose-strong:text-zinc-900
-            prose-code:bg-zinc-100 prose-code:rounded prose-code:px-1"
+            prose-blockquote:border-l-4 prose-blockquote:italic
+            prose-code:bg-surface-2 prose-code:rounded prose-code:px-1"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
         {/* Sponsor attribution footer */}
         {isSponsored && (
           <div className="max-w-3xl mx-auto px-6 mt-16">
-            <div className="border-t border-zinc-100 pt-8 flex items-center gap-6">
+            <div className="border-t border-line pt-8 flex items-center gap-6">
               <img
                 src={post.sponsor_logo}
                 alt="Sponsor"
                 className="h-12 w-auto object-contain rounded-lg"
               />
-              <p className="text-sm text-zinc-400 leading-relaxed">
+              <p className="text-sm text-subtle leading-relaxed">
                 This article was created in partnership with our sponsor. Sponsored content is produced independently of editorial staff.
               </p>
             </div>

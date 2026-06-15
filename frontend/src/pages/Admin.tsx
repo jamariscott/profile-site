@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../lib/config';
 import RichTextEditor from '../components/RichTextEditor';
+import { getAdminSession, setAdminSession, clearAdminSession } from '../lib/auth';
 
 interface WritingPost {
   slug: string;
@@ -13,9 +14,9 @@ interface WritingPost {
 
 export default function Admin() {
   const [posts, setPosts] = useState<WritingPost[]>([]);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState(() => getAdminSession()?.username ?? '');
+  const [password, setPassword] = useState(() => getAdminSession()?.password ?? '');
+  const [isLoggedIn, setIsLoggedIn] = useState(() => getAdminSession() !== null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -60,6 +61,7 @@ export default function Admin() {
         throw new Error(data.detail || 'Login failed');
       }
 
+      setAdminSession({ username, password });
       setIsLoggedIn(true);
       loadPosts();
     } catch (err: any) {
@@ -68,6 +70,19 @@ export default function Admin() {
       setLoading(false);
     }
   };
+
+  const handleLogout = () => {
+    clearAdminSession();
+    setIsLoggedIn(false);
+    setPassword('');
+    setPosts([]);
+  };
+
+  // If a stored session exists, load posts on mount.
+  useEffect(() => {
+    if (isLoggedIn) loadPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // === LOAD POSTS ===
   const loadPosts = async () => {
@@ -168,59 +183,64 @@ export default function Admin() {
             placeholder="Username"
             value={username}
             onChange={e => setUsername(e.target.value)}
-            className="border p-4 w-full rounded-3xl text-lg mb-4"
+            className="border border-line bg-surface text-text p-4 w-full rounded-btn text-lg mb-4"
           />
           <input
             type="password"
             placeholder="Enter admin password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="border p-4 w-full rounded-3xl text-lg mb-4"
+            className="border border-line bg-surface text-text p-4 w-full rounded-btn text-lg mb-4"
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
           />
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="bg-zinc-900 text-white px-8 py-4 rounded-3xl w-full text-lg font-medium disabled:opacity-50"
+            className="bg-accent text-accent-contrast px-8 py-4 rounded-btn w-full text-lg font-medium disabled:opacity-50"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
-          {error && <p className="text-red-600 mt-4">{error}</p>}
+          {error && <p className="text-danger mt-4">{error}</p>}
         </div>
       ) : (
         <div>
-          {error && <p className="text-red-600 mb-6 p-4 bg-red-50 rounded-2xl">{error}</p>}
+          <div className="flex justify-end mb-6">
+            <button onClick={handleLogout} className="text-sm text-muted hover:text-text transition-colors">
+              Log out
+            </button>
+          </div>
+          {error && <p className="text-danger mb-6 p-4 bg-surface-2 rounded-btn">{error}</p>}
 
           {/* Create new post */}
-          <div className="border border-zinc-200 rounded-3xl p-6 mb-10">
+          <div className="border border-line rounded-card p-6 mb-10">
             <h2 className="text-2xl font-semibold mb-6">Create New Article</h2>
 
             {/* Title */}
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Title</label>
-            <input type="text" placeholder="Article title..." value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} className="border p-3 w-full rounded-2xl mb-4 text-lg font-medium" />
+            <label className="block text-sm font-medium text-muted mb-1">Title</label>
+            <input type="text" placeholder="Article title..." value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} className="border border-line bg-surface text-text p-3 w-full rounded-btn mb-4 text-lg font-medium" />
 
             {/* Summary */}
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Summary <span className="text-zinc-400 font-normal">(shown as subtitle)</span></label>
-            <input type="text" placeholder="A short description of the article..." value={newPost.summary} onChange={e => setNewPost({...newPost, summary: e.target.value})} className="border p-3 w-full rounded-2xl mb-4" />
+            <label className="block text-sm font-medium text-muted mb-1">Summary <span className="text-subtle font-normal">(shown as subtitle)</span></label>
+            <input type="text" placeholder="A short description of the article..." value={newPost.summary} onChange={e => setNewPost({...newPost, summary: e.target.value})} className="border border-line bg-surface text-text p-3 w-full rounded-btn mb-4" />
 
             {/* Sponsor */}
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Sponsor Image <span className="text-zinc-400 font-normal">(adds "Sponsored Content" badge + hero image + footer attribution)</span></label>
+            <label className="block text-sm font-medium text-muted mb-1">Sponsor Image <span className="text-subtle font-normal">(adds "Sponsored Content" badge + hero image + footer attribution)</span></label>
             <div className="flex gap-2 mb-2">
-              <input type="url" placeholder="Paste image URL..." value={newPost.sponsorLogo.startsWith('data:') ? '' : newPost.sponsorLogo} onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value})} className="border p-3 flex-1 rounded-2xl" />
-              <button type="button" onClick={() => coverImageInputRef.current?.click()} className="px-4 py-3 border border-zinc-200 rounded-2xl text-sm text-zinc-600 hover:bg-zinc-50 whitespace-nowrap">
+              <input type="url" placeholder="Paste image URL..." value={newPost.sponsorLogo.startsWith('data:') ? '' : newPost.sponsorLogo} onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value})} className="border border-line bg-surface text-text p-3 flex-1 rounded-btn" />
+              <button type="button" onClick={() => coverImageInputRef.current?.click()} className="px-4 py-3 border border-line rounded-2xl text-sm text-muted hover:bg-surface-2 whitespace-nowrap">
                 📁 Upload from device
               </button>
               <input ref={coverImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverImageUpload} />
             </div>
             {newPost.sponsorLogo && (
-              <div className="mb-4 rounded-2xl overflow-hidden border border-zinc-200 h-48">
+              <div className="mb-4 rounded-2xl overflow-hidden border border-line h-48">
                 <img src={newPost.sponsorLogo} alt="Cover preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
               </div>
             )}
             {!newPost.sponsorLogo && <div className="mb-4" />}
 
             {/* Content */}
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Content</label>
+            <label className="block text-sm font-medium text-muted mb-1">Content</label>
             <div className="mb-6">
               <RichTextEditor
                 value={newPost.content}
@@ -235,37 +255,37 @@ export default function Admin() {
               Also post to X.com
             </label>
 
-            <button onClick={createPost} className="bg-black text-white px-8 py-4 rounded-2xl text-base font-medium w-full">Publish Article</button>
+            <button onClick={createPost} className="bg-accent text-accent-contrast px-8 py-4 rounded-2xl text-base font-medium w-full">Publish Article</button>
           </div>
 
           {/* Existing posts */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold">Existing Articles</h2>
-            <button onClick={loadPosts} className="text-sm text-zinc-500 hover:text-zinc-700">Refresh</button>
+            <button onClick={loadPosts} className="text-sm text-muted hover:text-muted">Refresh</button>
           </div>
 
           <div className="space-y-4">
-            {posts.length === 0 && <p className="text-zinc-500">No posts yet.</p>}
+            {posts.length === 0 && <p className="text-muted">No posts yet.</p>}
             {posts.map(post => (
-              <div key={post.slug} className="border border-zinc-200 rounded-3xl p-6 flex justify-between items-center">
+              <div key={post.slug} className="border border-line rounded-card p-6 flex justify-between items-center">
                 <div>
                   <h3 className="font-semibold">{post.title}</h3>
-                  <p className="text-sm text-zinc-500">{post.date}</p>
+                  <p className="text-sm text-muted">{post.date}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   {post.x_posted ? (
-                    <span className="text-green-600 text-sm">Posted to X</span>
+                    <span className="text-success text-sm">Posted to X</span>
                   ) : (
                     <button
                       onClick={() => publishToX(post.slug)}
-                      className="text-blue-600 hover:text-blue-700 text-sm"
+                      className="text-accent hover:text-accent-hover text-sm"
                     >
                       Publish to X now
                     </button>
                   )}
                   <button
                     onClick={() => deletePost(post.slug, post.title)}
-                    className="text-red-600 hover:text-red-700 text-sm"
+                    className="text-danger hover:text-red-700 text-sm"
                   >
                     Delete
                   </button>

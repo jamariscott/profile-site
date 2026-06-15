@@ -10,7 +10,7 @@ export default function Section({ title, eyebrow, children }: SectionProps) {
   return (
     <section>
       {eyebrow && (
-        <h2 className="text-sm font-medium tracking-widest uppercase text-zinc-500">
+        <h2 className="text-sm font-medium tracking-widest uppercase text-muted">
           {eyebrow}
         </h2>
       )}

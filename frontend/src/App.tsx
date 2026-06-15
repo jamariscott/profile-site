@@ -9,18 +9,22 @@ import Card from "./components/Card";
 import Writing from "./pages/Writing";
 import WritingPost from "./pages/WritingPost";
 import Videos from "./pages/Videos";
+import AdminThemeSwitcher from "./components/AdminThemeSwitcher";
 
 import { API_BASE } from "./lib/config";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/writing" element={<Writing />} />
-      <Route path="/writing/:slug" element={<WritingPost />} />
-      <Route path="/videos" element={<Videos />} />
-      <Route path="/admin" element={<Admin />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/writing" element={<Writing />} />
+        <Route path="/writing/:slug" element={<WritingPost />} />
+        <Route path="/videos" element={<Videos />} />
+        <Route path="/admin" element={<Admin />} />
+      </Routes>
+      <AdminThemeSwitcher />
+    </>
   );
 }
 
@@ -73,9 +77,9 @@ function Home() {
       <Section>
         {profile && (
           <div>
-            <h1 className="text-5xl font-bold text-zinc-900">{profile.name}</h1>
-            <p className="text-xl text-zinc-500 mt-2">{profile.tagline}</p>
-            <p className="text-zinc-600 mt-6 max-w-2xl">{profile.bio}</p>
+            <h1 className="text-5xl font-bold text-text">{profile.name}</h1>
+            <p className="text-xl text-muted mt-2">{profile.tagline}</p>
+            <p className="text-muted mt-6 max-w-2xl">{profile.bio}</p>
           </div>
         )}
       </Section>
@@ -86,9 +90,9 @@ function Home() {
           {projects.map((project: any) => (
             <Card key={project.id || project.title}>
               <h3 className="text-2xl font-semibold">{project.title}</h3>
-              <p className="text-zinc-600 mt-2">{project.description}</p>
+              <p className="text-muted mt-2">{project.description}</p>
               {project.status && (
-                <span className="inline-block mt-4 text-xs px-3 py-1 bg-zinc-100 text-zinc-600 rounded-full">
+                <span className="inline-block mt-4 text-xs px-3 py-1 bg-surface-2 text-muted rounded-full">
                   {project.status}
                 </span>
               )}
@@ -106,7 +110,7 @@ function Home() {
               href={link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-3 bg-white border border-zinc-200 rounded-2xl hover:border-zinc-300 transition-colors"
+              className="px-6 py-3 bg-surface border border-line rounded-btn hover:border-line-strong transition-colors"
             >
               {link.label}
             </a>
@@ -115,7 +119,7 @@ function Home() {
           {/* Videos Link */}
           <a
             href="/videos"
-            className="px-6 py-3 bg-white border border-zinc-200 rounded-2xl hover:border-zinc-300 transition-colors flex items-center gap-2"
+            className="px-6 py-3 bg-surface border border-line rounded-btn hover:border-line-strong transition-colors flex items-center gap-2"
           >
             📺 Videos
           </a>
@@ -139,11 +143,11 @@ function Home() {
                       />
                     </div>
                   )}
-                  <span className="text-xs text-zinc-500 block mb-1">{post.date}</span>
-                  <h3 className="font-semibold text-zinc-900 group-hover:text-zinc-700 transition-colors leading-snug mb-1">
+                  <span className="text-xs text-muted block mb-1">{post.date}</span>
+                  <h3 className="font-semibold text-text group-hover:text-muted transition-colors leading-snug mb-1">
                     {post.title}
                   </h3>
-                  <p className="text-zinc-600 text-sm line-clamp-2">{post.summary}</p>
+                  <p className="text-muted text-sm line-clamp-2">{post.summary}</p>
                 </Link>
               );
             })}
@@ -151,7 +155,7 @@ function Home() {
           <div className="mt-6">
             <Link
               to="/writing"
-              className="text-sm font-medium text-zinc-900 hover:text-zinc-600 transition-colors"
+              className="text-sm font-medium text-text hover:text-muted transition-colors"
             >
               View all articles →
             </Link>

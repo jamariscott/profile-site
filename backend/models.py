@@ -52,3 +52,11 @@ class Admin(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+
+# Generic site settings (key/value). Used for the active site theme today,
+# and reusable for other global config later.
+class Setting(Base):
+    __tablename__ = "settings"
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, index=True, nullable=False)
+    value = Column(String, nullable=False)

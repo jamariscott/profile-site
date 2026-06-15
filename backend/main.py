@@ -9,8 +9,33 @@ import urllib.request
 from io import BytesIO
 import bcrypt
 
-from database import SessionLocal
-from models import Profile, Project, Link, Video, Writing, Admin
+from database import SessionLocal, engine, Base
+from models import Profile, Project, Link, Video, Writing, Admin, Setting
+
+# Idempotent: creates any missing tables (e.g. the settings table) on startup.
+# Safe to run every boot — it never drops or alters existing tables. This is how
+# this project provisions tables, since the Render start command does not run
+# Alembic migrations.
+Base.metadata.create_all(bind=engine)
+
+# ---- Site settings (theme) ----
+DEFAULT_THEME = "classic"
+VALID_THEMES = {"classic", "huffpost", "twilight"}
+
+
+def get_setting(db: "Session", key: str, default=None):
+    row = db.query(Setting).filter(Setting.key == key).first()
+    return row.value if row else default
+
+
+def set_setting(db: "Session", key: str, value: str):
+    row = db.query(Setting).filter(Setting.key == key).first()
+    if row:
+        row.value = value
+    else:
+        db.add(Setting(key=key, value=value))
+    db.commit()
+
 
 app = FastAPI()
 
@@ -86,9 +111,25 @@ async def get_writing_post(slug: str, db: Session = Depends(get_db)):
         "sponsor_logo": post.sponsor_logo,
     }
 
+@app.get("/api/settings")
+async def get_settings(db: Session = Depends(get_db)):
+    """Public: returns global site settings (the active theme). Read on every page load."""
+    theme = get_setting(db, "active_theme", DEFAULT_THEME)
+    if theme not in VALID_THEMES:
+        theme = DEFAULT_THEME
+    return {"theme": theme}
+
 # ===================== ADMIN AUTH (Database-based) =====================
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+
+def authenticate_admin(username: str, password: str, db: Session) -> Admin:
+    """Verify admin credentials or raise 401. Shared by admin-only endpoints."""
+    admin = db.query(Admin).filter(Admin.username == username).first()
+    if not admin or not verify_password(password, admin.hashed_password):
+        raise HTTPException(401, "Unauthorized")
+    return admin
 
 @app.post("/api/admin/login")
 async def admin_login(data: dict, db: Session = Depends(get_db)):
@@ -100,6 +141,18 @@ async def admin_login(data: dict, db: Session = Depends(get_db)):
         raise HTTPException(401, "Invalid username or password")
     
     return {"message": "Login successful", "username": username}
+
+@app.put("/api/admin/settings/theme")
+async def set_theme(data: dict, db: Session = Depends(get_db)):
+    """Admin-only: set the global active theme for the whole site."""
+    authenticate_admin(data.get("username"), data.get("password"), db)
+
+    theme = data.get("theme")
+    if theme not in VALID_THEMES:
+        raise HTTPException(400, f"Invalid theme. Must be one of: {', '.join(sorted(VALID_THEMES))}")
+
+    set_setting(db, "active_theme", theme)
+    return {"theme": theme}
 
 # ===================== ADMIN ENDPOINTS =====================
 

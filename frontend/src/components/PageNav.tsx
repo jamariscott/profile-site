@@ -4,14 +4,14 @@ function navLinkClass(isActive: boolean) {
   return [
     "text-sm transition",
     isActive
-      ? "text-zinc-900 font-medium"
-      : "text-zinc-500 hover:text-zinc-900",
+      ? "text-text font-medium"
+      : "text-muted hover:text-text",
   ].join(" ");
 }
 
 export default function PageNav() {
   return (
-    <div className="border-b border-zinc-100 bg-white">
+    <div className="border-b border-line bg-surface">
       <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-6">
         <NavLink to="/" end className={({ isActive }) => navLinkClass(isActive)}>
           Home
