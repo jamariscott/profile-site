@@ -12,11 +12,67 @@ interface MyComment {
   created_at: string | null;
 }
 
+interface MyProject {
+  id: number;
+  title: string;
+  description: string | null;
+  status: string | null;
+}
+
 export default function Account() {
   const session = useAuth();
   const navigate = useNavigate();
   const [comments, setComments] = useState<MyComment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // projects
+  const [projects, setProjects] = useState<MyProject[]>([]);
+  const [pTitle, setPTitle] = useState("");
+  const [pDesc, setPDesc] = useState("");
+  const [pStatus, setPStatus] = useState("");
+  const [pError, setPError] = useState("");
+  const [pSaving, setPSaving] = useState(false);
+
+  const loadProjects = () => {
+    apiJson<MyProject[]>("/api/me/projects").then(setProjects).catch(() => {});
+  };
+
+  const addProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPError("");
+    if (!pTitle.trim()) {
+      setPError("Title is required.");
+      return;
+    }
+    setPSaving(true);
+    try {
+      const res = await apiFetch("/api/me/projects", {
+        method: "POST",
+        body: JSON.stringify({ title: pTitle, description: pDesc, status: pStatus }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Could not add project");
+      setPTitle("");
+      setPDesc("");
+      setPStatus("");
+      loadProjects();
+    } catch (err: any) {
+      setPError(err?.message || "Could not add project");
+    } finally {
+      setPSaving(false);
+    }
+  };
+
+  const deleteProject = async (id: number) => {
+    if (!confirm("Delete this project?")) return;
+    try {
+      const res = await apiFetch(`/api/me/projects/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      loadProjects();
+    } catch (err: any) {
+      alert(err?.message || "Failed to delete");
+    }
+  };
 
   // change-password form
   const [currentPw, setCurrentPw] = useState("");
@@ -60,6 +116,7 @@ export default function Account() {
       .then(setComments)
       .catch(() => {})
       .finally(() => setLoading(false));
+    loadProjects();
   }, [session, navigate]);
 
   if (!session) return null;
@@ -109,6 +166,68 @@ export default function Account() {
               Go to Admin Panel →
             </Link>
           )}
+        </div>
+
+        {/* My projects */}
+        <div className="border border-line bg-surface rounded-card p-6 mb-10 shadow-card">
+          <h2 className="text-lg font-semibold text-text mb-4">My Projects</h2>
+          <p className="text-muted text-sm mb-4">These show in the Projects section of the homepage when you're logged in.</p>
+
+          {projects.length > 0 && (
+            <div className="space-y-3 mb-6">
+              {projects.map((p) => (
+                <div key={p.id} className="border border-line rounded-btn p-4 flex justify-between items-start gap-4">
+                  <div className="min-w-0">
+                    <h3 className="text-text font-semibold">{p.title}</h3>
+                    {p.description && <p className="text-muted text-sm mt-1">{p.description}</p>}
+                    {p.status && (
+                      <span className="inline-block mt-2 text-xs px-2 py-0.5 bg-surface-2 text-muted rounded-full">
+                        {p.status}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => deleteProject(p.id)}
+                    className="text-danger hover:opacity-80 text-sm shrink-0"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <form onSubmit={addProject} className="space-y-3">
+            <input
+              type="text"
+              placeholder="Project title"
+              value={pTitle}
+              onChange={(e) => setPTitle(e.target.value)}
+              className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+            />
+            <textarea
+              placeholder="Description (optional)"
+              value={pDesc}
+              onChange={(e) => setPDesc(e.target.value)}
+              rows={2}
+              className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+            />
+            <input
+              type="text"
+              placeholder="Status (optional, e.g. 'In progress')"
+              value={pStatus}
+              onChange={(e) => setPStatus(e.target.value)}
+              className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+            />
+            {pError && <p className="text-danger text-sm">{pError}</p>}
+            <button
+              type="submit"
+              disabled={pSaving || !pTitle.trim()}
+              className="bg-accent text-accent-contrast px-6 py-2.5 rounded-btn font-medium disabled:opacity-50"
+            >
+              {pSaving ? "Adding…" : "Add project"}
+            </button>
+          </form>
         </div>
 
         {/* Change password */}

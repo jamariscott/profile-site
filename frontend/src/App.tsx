@@ -15,6 +15,8 @@ import Account from "./pages/Account";
 import AdminThemeSwitcher from "./components/AdminThemeSwitcher";
 
 import { API_BASE } from "./lib/config";
+import { apiFetch } from "./lib/api";
+import { useAuth } from "./lib/auth";
 
 export default function App() {
   return (
@@ -53,6 +55,7 @@ function extractThumbnail(post: WritingPost): string | null {
 }
 
 function Home() {
+  const session = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [links, setLinks] = useState<any[]>([]);
@@ -63,10 +66,6 @@ function Home() {
       .then(res => res.json())
       .then(data => setProfile(data));
 
-    fetch(`${API_BASE}/api/projects`)
-      .then(res => res.json())
-      .then(data => setProjects(data));
-
     fetch(`${API_BASE}/api/links`)
       .then(res => res.json())
       .then(data => setLinks(data));
@@ -76,6 +75,15 @@ function Home() {
       .then(data => setArticles(data.slice(0, 3)))
       .catch(() => {});
   }, []);
+
+  // Projects are per-user: logged-in users see their own, logged-out visitors
+  // see the owner's. Refetch whenever the auth session changes.
+  useEffect(() => {
+    apiFetch("/api/projects")
+      .then(res => res.json())
+      .then(data => setProjects(Array.isArray(data) ? data : []))
+      .catch(() => setProjects([]));
+  }, [session]);
 
   return (
     <Layout>

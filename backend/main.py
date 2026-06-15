@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 import json
 import os
 import re
@@ -17,6 +17,7 @@ from auth import (
     verify_password,
     create_access_token,
     get_current_user,
+    get_optional_user,
     require_admin,
     public_user,
 )
@@ -37,20 +38,42 @@ def migrate_legacy_admins(db):
     db.commit()
 
 
+def ensure_columns():
+    """Add columns introduced after a table was first created. create_all only
+    creates missing TABLES, not missing COLUMNS, and Render doesn't run Alembic,
+    so we add new columns idempotently here (Postgres ADD COLUMN IF NOT EXISTS)."""
+    stmts = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR",
+        "ALTER TABLE projects ADD COLUMN IF NOT EXISTS user_id INTEGER",
+    ]
+    with engine.begin() as conn:
+        for s in stmts:
+            conn.execute(text(s))
+
+
 def init_database():
-    """Create any missing tables and migrate the legacy admin on startup.
+    """Create missing tables/columns and migrate data on startup.
 
     Wrapped in try/except so a transient database problem (e.g. a stale
     DATABASE_URL password) logs a warning instead of crashing the whole service
     on boot. The app still starts, and self-heals on the next boot once the
-    database is reachable again. Idempotent: never drops or alters existing
-    tables. (Render's start command doesn't run Alembic, so this provisions
-    tables.)"""
+    database is reachable again. Idempotent: never drops or alters existing data.
+    (Render's start command doesn't run Alembic, so this provisions schema.)"""
     try:
         Base.metadata.create_all(bind=engine)
+        ensure_columns()
         db = SessionLocal()
         try:
             migrate_legacy_admins(db)
+            # Claim ownerless projects for the first admin so they remain the
+            # public-facing set shown to logged-out visitors.
+            admin = db.query(User).filter(User.role == "admin").order_by(User.id).first()
+            if admin:
+                for p in db.query(Project).filter(Project.user_id.is_(None)).all():
+                    p.user_id = admin.id
+                db.commit()
         finally:
             db.close()
         print("✅ Database initialized")
@@ -107,9 +130,23 @@ async def get_profile(db: Session = Depends(get_db)):
         }
     return {}
 
+def project_dict(p: Project) -> dict:
+    return {"id": p.id, "title": p.title, "description": p.description, "status": p.status}
+
+
 @app.get("/api/projects")
-async def get_projects(db: Session = Depends(get_db)):
-    return [p.__dict__ for p in db.query(Project).all()]
+async def get_projects(user: User = Depends(get_optional_user), db: Session = Depends(get_db)):
+    """Per-user: a logged-in user sees their own projects; logged-out visitors see
+    the owner's (first admin's) projects as the public set."""
+    if user:
+        owner_id = user.id
+    else:
+        admin = db.query(User).filter(User.role == "admin").order_by(User.id).first()
+        owner_id = admin.id if admin else None
+    if owner_id is None:
+        return []
+    rows = db.query(Project).filter(Project.user_id == owner_id).all()
+    return [project_dict(p) for p in rows]
 
 @app.get("/api/links")
 async def get_links(db: Session = Depends(get_db)):
@@ -163,9 +200,14 @@ async def register(data: dict, db: Session = Depends(get_db)):
     username = (data.get("username") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
+    first_name = (data.get("first_name") or "").strip()
+    last_name = (data.get("last_name") or "").strip()
+    phone = (data.get("phone") or "").strip() or None
 
     if not username or not email or not password:
         raise HTTPException(400, "username, email, and password are required")
+    if not first_name or not last_name:
+        raise HTTPException(400, "First and last name are required")
     if len(username) < 3:
         raise HTTPException(400, "Username must be at least 3 characters")
     if len(password) < 8:
@@ -183,6 +225,9 @@ async def register(data: dict, db: Session = Depends(get_db)):
         email=email,
         hashed_password=hash_password(password),
         role="member",
+        first_name=first_name,
+        last_name=last_name,
+        phone=phone,
     )
     db.add(user)
     db.commit()
@@ -236,6 +281,55 @@ async def my_comments(user: User = Depends(get_current_user), db: Session = Depe
         "status": c.status,
         "created_at": c.created_at.isoformat() if c.created_at else None,
     } for c in rows]
+
+
+# ---- member's own projects ----
+@app.get("/api/me/projects")
+async def list_my_projects(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rows = db.query(Project).filter(Project.user_id == user.id).order_by(Project.id.desc()).all()
+    return [project_dict(p) for p in rows]
+
+
+@app.post("/api/me/projects")
+async def create_my_project(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    title = (data.get("title") or "").strip()
+    if not title:
+        raise HTTPException(400, "Title is required")
+    p = Project(
+        title=title,
+        description=(data.get("description") or "").strip() or None,
+        status=(data.get("status") or "").strip() or None,
+        user_id=user.id,
+    )
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    return project_dict(p)
+
+
+@app.put("/api/me/projects/{project_id}")
+async def update_my_project(project_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    p = db.query(Project).filter(Project.id == project_id, Project.user_id == user.id).first()
+    if not p:
+        raise HTTPException(404, "Project not found")
+    if "title" in data and (data.get("title") or "").strip():
+        p.title = data["title"].strip()
+    if "description" in data:
+        p.description = (data.get("description") or "").strip() or None
+    if "status" in data:
+        p.status = (data.get("status") or "").strip() or None
+    db.commit()
+    return project_dict(p)
+
+
+@app.delete("/api/me/projects/{project_id}")
+async def delete_my_project(project_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    p = db.query(Project).filter(Project.id == project_id, Project.user_id == user.id).first()
+    if not p:
+        raise HTTPException(404, "Project not found")
+    db.delete(p)
+    db.commit()
+    return {"message": "Project deleted"}
 
 # ===================== COMMENTS =====================
 @app.get("/api/writing/{slug}/comments")

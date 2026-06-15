@@ -13,6 +13,9 @@ export interface AuthUser {
   username: string;
   email: string | null;
   role: string; // "admin" | "member"
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
 }
 
 export interface AuthSession {

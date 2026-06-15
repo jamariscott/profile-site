@@ -5,8 +5,11 @@ import { apiJson } from "../lib/api";
 import { setSession, type AuthSession } from "../lib/auth";
 
 export default function Register() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -14,8 +17,8 @@ export default function Register() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !email || !password) {
-      setError("All fields are required.");
+    if (!firstName || !lastName || !username || !email || !password) {
+      setError("First name, last name, username, email, and password are required.");
       return;
     }
     if (password.length < 8) {
@@ -27,7 +30,14 @@ export default function Register() {
     try {
       const data = await apiJson<AuthSession>("/api/auth/register", {
         method: "POST",
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          username,
+          email,
+          phone,
+          password,
+        }),
       });
       setSession(data);
       navigate("/account");
@@ -45,19 +55,42 @@ export default function Register() {
         <h1 className="text-3xl font-bold text-text mb-2">Create an account</h1>
         <p className="text-muted text-sm mb-6">Join to comment and access members-only areas.</p>
         <form onSubmit={submit} className="space-y-4">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              placeholder="First name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+              autoFocus
+            />
+            <input
+              type="text"
+              placeholder="Last name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+            />
+          </div>
           <input
             type="text"
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="border border-line bg-surface text-text p-3 w-full rounded-btn"
-            autoFocus
           />
           <input
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+          />
+          <input
+            type="tel"
+            placeholder="Phone (optional)"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             className="border border-line bg-surface text-text p-3 w-full rounded-btn"
           />
           <input

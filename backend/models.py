@@ -16,6 +16,9 @@ class Project(Base):
     title = Column(String, nullable=False)
     description = Column(Text)
     status = Column(String)
+    # Owner. NULL/admin-owned projects are the public-facing set shown to
+    # logged-out visitors; logged-in users see the projects they own.
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
 
 class Link(Base):
     __tablename__ = "links"
@@ -72,6 +75,9 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=True)
     hashed_password = Column(String, nullable=False)
     role = Column(String, nullable=False, default="member")  # "member" | "admin"
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=func.now())
 
