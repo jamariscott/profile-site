@@ -91,6 +91,32 @@
   color-scheme: dark;
 }
 
+/* ---- MUSIC: dark, bold, magenta accent (artist profiles) ---- */
+[data-theme="music"] {
+  --c-bg: 10 10 12;
+  --c-surface: 20 20 24;
+  --c-surface-2: 32 32 38;
+  --c-text: 245 245 247;
+  --c-muted: 160 160 170;
+  --c-subtle: 110 110 120;
+  --c-line: 44 44 52;
+  --c-line-strong: 70 70 82;
+  --c-accent: 236 72 153;        /* vivid magenta */
+  --c-accent-hover: 219 39 119;
+  --c-accent-contrast: 255 255 255;
+  --c-danger: 248 113 113;
+  --c-success: 74 222 128;
+
+  --font-heading: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-card: 0.875rem;
+  --radius-btn: 9999px;          /* pill buttons */
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.05), 0 12px 32px rgb(0 0 0 / 0.5);
+
+  color-scheme: dark;
+}
+
 /* ============================================================
    BASE
    ============================================================ */

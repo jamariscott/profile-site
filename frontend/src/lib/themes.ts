@@ -2,7 +2,7 @@
 // To add a theme: add an entry here, add a matching [data-theme="id"] block in
 // src/index.css, and add the id to VALID_THEMES in the backend (main.py).
 
-export type ThemeId = "classic" | "huffpost" | "twilight";
+export type ThemeId = "classic" | "huffpost" | "twilight" | "music";
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -30,6 +30,12 @@ export const THEMES: ThemeMeta[] = [
     label: "Twilight Zone",
     description: "Dark, high-contrast, retro",
     swatch: ["#09090b", "#18181b", "#7dd3fc"],
+  },
+  {
+    id: "music",
+    label: "Music",
+    description: "Dark, bold, made for artists",
+    swatch: ["#0a0a0c", "#141418", "#ec4899"],
   },
 ];
 

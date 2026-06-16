@@ -4,6 +4,7 @@ import PageNav from "../components/PageNav";
 import { apiJson, apiFetch } from "../lib/api";
 import { useAuth, clearSession } from "../lib/auth";
 import { THEMES, type ThemeId } from "../lib/themes";
+import MusicManager from "../components/MusicManager";
 
 interface MyComment {
   id: number;
@@ -36,7 +37,22 @@ const SECTION_LABELS: Record<string, string> = {
   about: "About",
   projects: "Projects",
   links: "Links",
+  tracks: "Tracks",
+  releases: "Releases",
+  shows: "Shows",
 };
+
+const ALL_SECTION_TYPES = ["about", "projects", "links", "tracks", "releases", "shows"];
+
+// A music profile preset: which sections are on and their order.
+const MUSIC_LAYOUT = [
+  { type: "about", visible: true },
+  { type: "tracks", visible: true },
+  { type: "releases", visible: true },
+  { type: "shows", visible: true },
+  { type: "links", visible: true },
+  { type: "projects", visible: false },
+];
 
 export default function Account() {
   const session = useAuth();
@@ -99,6 +115,7 @@ export default function Account() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [profileTheme, setProfileTheme] = useState<ThemeId | "">("");
+  const [genres, setGenres] = useState("");
   const [layout, setLayout] = useState<LayoutSection[]>([]);
   const [profSaving, setProfSaving] = useState(false);
   const [profNotice, setProfNotice] = useState("");
@@ -117,10 +134,37 @@ export default function Account() {
         setAvatarUrl(p.avatar_url || "");
         setIsPublic(p.is_public !== false);
         setProfileTheme(p.theme || "");
-        setLayout(Array.isArray(p.layout) ? p.layout : []);
+        setGenres(Array.isArray(p.genres) ? p.genres.join(", ") : "");
+        // Merge any known sections missing from the saved layout (as hidden) so
+        // every section type is toggleable in the editor.
+        const base: LayoutSection[] = Array.isArray(p.layout) ? p.layout : [];
+        const present = new Set(base.map((s) => s.type));
+        const merged = [
+          ...base,
+          ...ALL_SECTION_TYPES.filter((t) => !present.has(t)).map((t) => ({ type: t, visible: false })),
+        ];
+        setLayout(merged);
         setLinks(Array.isArray(p.links) ? p.links : []);
       })
       .catch(() => {});
+  };
+
+  const setupMusic = async () => {
+    setProfNotice("");
+    setProfSaving(true);
+    try {
+      const res = await apiFetch("/api/me/profile", {
+        method: "PUT",
+        body: JSON.stringify({ theme: "music", layout: MUSIC_LAYOUT }),
+      });
+      if (!res.ok) throw new Error("Could not set up music profile");
+      loadProfile();
+      setProfNotice("Music profile set up — add tracks, releases and shows below.");
+    } catch (err: any) {
+      setProfNotice(err?.message || "Could not set up music profile");
+    } finally {
+      setProfSaving(false);
+    }
   };
 
   const saveProfile = async (e: React.FormEvent) => {
@@ -136,6 +180,7 @@ export default function Account() {
           avatar_url: avatarUrl,
           is_public: isPublic,
           theme: profileTheme || null,
+          genres,
           layout,
         }),
       });
@@ -331,6 +376,16 @@ export default function Account() {
                 className="border border-line bg-surface text-text p-3 w-full rounded-btn"
               />
             </div>
+            <div>
+              <label className="block text-sm text-muted mb-1">Genres <span className="text-subtle font-normal">(comma-separated, shown on music profiles)</span></label>
+              <input
+                type="text"
+                placeholder="e.g. Hip-hop, R&B, Soul"
+                value={genres}
+                onChange={(e) => setGenres(e.target.value)}
+                className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+              />
+            </div>
 
             {/* Theme picker */}
             <div>
@@ -390,6 +445,25 @@ export default function Account() {
               {profSaving ? "Saving…" : "Save profile"}
             </button>
           </form>
+        </div>
+
+        {/* Music */}
+        <div className="border border-line bg-surface rounded-card p-6 mb-10 shadow-card">
+          <div className="flex items-center justify-between mb-2 gap-4">
+            <h2 className="text-lg font-semibold text-text">Music</h2>
+            <button
+              type="button"
+              onClick={setupMusic}
+              disabled={profSaving}
+              className="text-sm bg-accent text-accent-contrast px-4 py-2 rounded-btn font-medium disabled:opacity-50 whitespace-nowrap"
+            >
+              ♪ Set up music profile
+            </button>
+          </div>
+          <p className="text-muted text-sm mb-6">
+            One click arranges your profile for music (tracks, releases, shows) and applies the Music theme. You can rearrange anything afterward in the section list above.
+          </p>
+          <MusicManager />
         </div>
 
         {/* Links */}

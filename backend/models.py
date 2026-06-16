@@ -86,8 +86,41 @@ class User(Base):
     profile_public = Column(Boolean, nullable=False, default=True)
     profile_theme = Column(String, nullable=True)   # theme id for this profile's page
     profile_layout = Column(Text, nullable=True)    # JSON: ordered section visibility
+    genres = Column(String, nullable=True)          # comma-separated genre tags (music)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=func.now())
+
+# ---- Music profession modules (per-user) ----
+class Track(Base):
+    __tablename__ = "tracks"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    url = Column(String, nullable=False)   # streaming link (Spotify/SoundCloud/YouTube/Apple)
+    title = Column(String, nullable=True)
+    sort = Column(Integer, nullable=True, default=0)
+
+
+class Release(Base):
+    __tablename__ = "releases"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    year = Column(String, nullable=True)
+    cover_url = Column(String, nullable=True)
+    link = Column(String, nullable=True)
+    sort = Column(Integer, nullable=True, default=0)
+
+
+class Show(Base):
+    __tablename__ = "shows"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    date = Column(String, nullable=True)   # free-form date string for v1
+    venue = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    ticket_url = Column(String, nullable=True)
+    sort = Column(Integer, nullable=True, default=0)
+
 
 # Comments on Writing posts. Admin-moderated: created as "pending", shown
 # publicly only once "approved".

@@ -11,7 +11,7 @@ import urllib.request
 from io import BytesIO
 
 from database import SessionLocal, engine, Base, get_db
-from models import Profile, Project, Link, Video, Writing, Admin, Setting, User, Comment
+from models import Profile, Project, Link, Video, Writing, Admin, Setting, User, Comment, Track, Release, Show
 from auth import (
     hash_password,
     verify_password,
@@ -52,6 +52,7 @@ def ensure_columns():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_public BOOLEAN DEFAULT TRUE",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_theme VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_layout TEXT",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS genres VARCHAR",
         "ALTER TABLE projects ADD COLUMN IF NOT EXISTS user_id INTEGER",
         "ALTER TABLE links ADD COLUMN IF NOT EXISTS user_id INTEGER",
     ]
@@ -101,7 +102,7 @@ init_database()
 
 # ---- Site settings (theme) ----
 DEFAULT_THEME = "classic"
-VALID_THEMES = {"classic", "huffpost", "twilight"}
+VALID_THEMES = {"classic", "huffpost", "twilight", "music"}
 
 
 def get_setting(db: Session, key: str, default=None):
@@ -154,6 +155,22 @@ def link_dict(l: Link) -> dict:
     return {"id": l.id, "label": l.label, "href": l.href, "note": l.note}
 
 
+def track_dict(t: Track) -> dict:
+    return {"id": t.id, "url": t.url, "title": t.title}
+
+
+def release_dict(r: Release) -> dict:
+    return {"id": r.id, "title": r.title, "year": r.year, "cover_url": r.cover_url, "link": r.link}
+
+
+def show_dict(s: Show) -> dict:
+    return {"id": s.id, "date": s.date, "venue": s.venue, "city": s.city, "ticket_url": s.ticket_url}
+
+
+def genres_list(user: User) -> list:
+    return [g.strip() for g in (user.genres or "").split(",") if g.strip()]
+
+
 # Default profile section layout (toggle + reorder a known set).
 DEFAULT_LAYOUT = [
     {"type": "about", "visible": True},
@@ -181,6 +198,9 @@ def display_name(user: User) -> str:
 def profile_payload(user: User, db: Session) -> dict:
     projects = db.query(Project).filter(Project.user_id == user.id).order_by(Project.id.desc()).all()
     links = db.query(Link).filter(Link.user_id == user.id).order_by(Link.id.asc()).all()
+    tracks = db.query(Track).filter(Track.user_id == user.id).order_by(Track.sort.asc(), Track.id.asc()).all()
+    releases = db.query(Release).filter(Release.user_id == user.id).order_by(Release.sort.asc(), Release.id.desc()).all()
+    shows = db.query(Show).filter(Show.user_id == user.id).order_by(Show.sort.asc(), Show.id.asc()).all()
     return {
         "username": user.username,
         "display_name": display_name(user),
@@ -190,8 +210,12 @@ def profile_payload(user: User, db: Session) -> dict:
         "theme": user.profile_theme,
         "is_public": user.profile_public,
         "layout": get_layout(user),
+        "genres": genres_list(user),
         "projects": [project_dict(p) for p in projects],
         "links": [link_dict(l) for l in links],
+        "tracks": [track_dict(t) for t in tracks],
+        "releases": [release_dict(r) for r in releases],
+        "shows": [show_dict(s) for s in shows],
     }
 
 
@@ -440,6 +464,104 @@ async def delete_my_link(link_id: int, user: User = Depends(get_current_user), d
     return {"message": "Link deleted"}
 
 
+# ---- music: tracks ----
+@app.get("/api/me/tracks")
+async def list_my_tracks(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rows = db.query(Track).filter(Track.user_id == user.id).order_by(Track.sort.asc(), Track.id.asc()).all()
+    return [track_dict(t) for t in rows]
+
+
+@app.post("/api/me/tracks")
+async def create_my_track(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    url = (data.get("url") or "").strip()
+    if not url:
+        raise HTTPException(400, "A streaming URL is required")
+    t = Track(url=url, title=(data.get("title") or "").strip() or None, user_id=user.id)
+    db.add(t)
+    db.commit()
+    db.refresh(t)
+    return track_dict(t)
+
+
+@app.delete("/api/me/tracks/{track_id}")
+async def delete_my_track(track_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    t = db.query(Track).filter(Track.id == track_id, Track.user_id == user.id).first()
+    if not t:
+        raise HTTPException(404, "Track not found")
+    db.delete(t)
+    db.commit()
+    return {"message": "Track deleted"}
+
+
+# ---- music: releases ----
+@app.get("/api/me/releases")
+async def list_my_releases(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rows = db.query(Release).filter(Release.user_id == user.id).order_by(Release.id.desc()).all()
+    return [release_dict(r) for r in rows]
+
+
+@app.post("/api/me/releases")
+async def create_my_release(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    title = (data.get("title") or "").strip()
+    if not title:
+        raise HTTPException(400, "Release title is required")
+    r = Release(
+        title=title,
+        year=(data.get("year") or "").strip() or None,
+        cover_url=(data.get("cover_url") or "").strip() or None,
+        link=(data.get("link") or "").strip() or None,
+        user_id=user.id,
+    )
+    db.add(r)
+    db.commit()
+    db.refresh(r)
+    return release_dict(r)
+
+
+@app.delete("/api/me/releases/{release_id}")
+async def delete_my_release(release_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    r = db.query(Release).filter(Release.id == release_id, Release.user_id == user.id).first()
+    if not r:
+        raise HTTPException(404, "Release not found")
+    db.delete(r)
+    db.commit()
+    return {"message": "Release deleted"}
+
+
+# ---- music: shows ----
+@app.get("/api/me/shows")
+async def list_my_shows(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rows = db.query(Show).filter(Show.user_id == user.id).order_by(Show.id.asc()).all()
+    return [show_dict(s) for s in rows]
+
+
+@app.post("/api/me/shows")
+async def create_my_show(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    s = Show(
+        date=(data.get("date") or "").strip() or None,
+        venue=(data.get("venue") or "").strip() or None,
+        city=(data.get("city") or "").strip() or None,
+        ticket_url=(data.get("ticket_url") or "").strip() or None,
+        user_id=user.id,
+    )
+    if not s.venue and not s.date:
+        raise HTTPException(400, "A show needs at least a date or venue")
+    db.add(s)
+    db.commit()
+    db.refresh(s)
+    return show_dict(s)
+
+
+@app.delete("/api/me/shows/{show_id}")
+async def delete_my_show(show_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    s = db.query(Show).filter(Show.id == show_id, Show.user_id == user.id).first()
+    if not s:
+        raise HTTPException(404, "Show not found")
+    db.delete(s)
+    db.commit()
+    return {"message": "Show deleted"}
+
+
 # ---- profiles ----
 @app.get("/api/me/profile")
 async def get_my_profile(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -461,6 +583,12 @@ async def update_my_profile(data: dict, user: User = Depends(get_current_user), 
         user.profile_theme = theme if theme in VALID_THEMES else None
     if "layout" in data and isinstance(data.get("layout"), list):
         user.profile_layout = json.dumps(data["layout"])
+    if "genres" in data:
+        g = data.get("genres")
+        if isinstance(g, list):
+            user.genres = ", ".join([str(x).strip() for x in g if str(x).strip()]) or None
+        else:
+            user.genres = (g or "").strip() or None
     db.commit()
     return profile_payload(user, db)
 
