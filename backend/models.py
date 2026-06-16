@@ -26,6 +26,7 @@ class Link(Base):
     label = Column(String, nullable=False)
     href = Column(String, nullable=False)
     note = Column(String)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
 
 class Video(Base):
     __tablename__ = "videos"
@@ -78,6 +79,13 @@ class User(Base):
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     phone = Column(String, nullable=True)
+    # ---- public profile ----
+    headline = Column(String, nullable=True)        # short tagline under the name
+    bio = Column(Text, nullable=True)
+    avatar_url = Column(String, nullable=True)
+    profile_public = Column(Boolean, nullable=False, default=True)
+    profile_theme = Column(String, nullable=True)   # theme id for this profile's page
+    profile_layout = Column(Text, nullable=True)    # JSON: ordered section visibility
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=func.now())
 

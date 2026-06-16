@@ -46,7 +46,14 @@ def ensure_columns():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS headline VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_public BOOLEAN DEFAULT TRUE",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_theme VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_layout TEXT",
         "ALTER TABLE projects ADD COLUMN IF NOT EXISTS user_id INTEGER",
+        "ALTER TABLE links ADD COLUMN IF NOT EXISTS user_id INTEGER",
     ]
     with engine.begin() as conn:
         for s in stmts:
@@ -71,8 +78,17 @@ def init_database():
             # public-facing set shown to logged-out visitors.
             admin = db.query(User).filter(User.role == "admin").order_by(User.id).first()
             if admin:
+                # Claim ownerless projects and links for the admin (the public set).
                 for p in db.query(Project).filter(Project.user_id.is_(None)).all():
                     p.user_id = admin.id
+                for l in db.query(Link).filter(Link.user_id.is_(None)).all():
+                    l.user_id = admin.id
+                # Seed the admin's public profile from the old global Profile record.
+                if not admin.bio:
+                    legacy = db.query(Profile).first()
+                    if legacy:
+                        admin.bio = legacy.bio
+                        admin.headline = legacy.tagline
                 db.commit()
         finally:
             db.close()
@@ -134,6 +150,51 @@ def project_dict(p: Project) -> dict:
     return {"id": p.id, "title": p.title, "description": p.description, "status": p.status}
 
 
+def link_dict(l: Link) -> dict:
+    return {"id": l.id, "label": l.label, "href": l.href, "note": l.note}
+
+
+# Default profile section layout (toggle + reorder a known set).
+DEFAULT_LAYOUT = [
+    {"type": "about", "visible": True},
+    {"type": "projects", "visible": True},
+    {"type": "links", "visible": True},
+]
+
+
+def get_layout(user: User) -> list:
+    if user.profile_layout:
+        try:
+            parsed = json.loads(user.profile_layout)
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            pass
+    return DEFAULT_LAYOUT
+
+
+def display_name(user: User) -> str:
+    full = f"{(user.first_name or '').strip()} {(user.last_name or '').strip()}".strip()
+    return full or user.username
+
+
+def profile_payload(user: User, db: Session) -> dict:
+    projects = db.query(Project).filter(Project.user_id == user.id).order_by(Project.id.desc()).all()
+    links = db.query(Link).filter(Link.user_id == user.id).order_by(Link.id.asc()).all()
+    return {
+        "username": user.username,
+        "display_name": display_name(user),
+        "headline": user.headline,
+        "bio": user.bio,
+        "avatar_url": user.avatar_url,
+        "theme": user.profile_theme,
+        "is_public": user.profile_public,
+        "layout": get_layout(user),
+        "projects": [project_dict(p) for p in projects],
+        "links": [link_dict(l) for l in links],
+    }
+
+
 @app.get("/api/projects")
 async def get_projects(user: User = Depends(get_optional_user), db: Session = Depends(get_db)):
     """Per-user: a logged-in user sees their own projects; logged-out visitors see
@@ -150,7 +211,10 @@ async def get_projects(user: User = Depends(get_optional_user), db: Session = De
 
 @app.get("/api/links")
 async def get_links(db: Session = Depends(get_db)):
-    return [l.__dict__ for l in db.query(Link).all()]
+    """Public: the owner's (first admin's) links, the public-facing set."""
+    admin = db.query(User).filter(User.role == "admin").order_by(User.id).first()
+    rows = db.query(Link).filter(Link.user_id == admin.id).all() if admin else []
+    return [link_dict(l) for l in rows]
 
 @app.get("/api/videos")
 async def get_videos(db: Session = Depends(get_db)):
@@ -330,6 +394,87 @@ async def delete_my_project(project_id: int, user: User = Depends(get_current_us
     db.delete(p)
     db.commit()
     return {"message": "Project deleted"}
+
+
+# ---- member's own links ----
+@app.get("/api/me/links")
+async def list_my_links(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return [link_dict(l) for l in db.query(Link).filter(Link.user_id == user.id).order_by(Link.id.asc()).all()]
+
+
+@app.post("/api/me/links")
+async def create_my_link(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    label = (data.get("label") or "").strip()
+    href = (data.get("href") or "").strip()
+    if not label or not href:
+        raise HTTPException(400, "Label and URL are required")
+    l = Link(label=label, href=href, note=(data.get("note") or "").strip() or None, user_id=user.id)
+    db.add(l)
+    db.commit()
+    db.refresh(l)
+    return link_dict(l)
+
+
+@app.put("/api/me/links/{link_id}")
+async def update_my_link(link_id: int, data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    l = db.query(Link).filter(Link.id == link_id, Link.user_id == user.id).first()
+    if not l:
+        raise HTTPException(404, "Link not found")
+    if "label" in data and (data.get("label") or "").strip():
+        l.label = data["label"].strip()
+    if "href" in data and (data.get("href") or "").strip():
+        l.href = data["href"].strip()
+    if "note" in data:
+        l.note = (data.get("note") or "").strip() or None
+    db.commit()
+    return link_dict(l)
+
+
+@app.delete("/api/me/links/{link_id}")
+async def delete_my_link(link_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    l = db.query(Link).filter(Link.id == link_id, Link.user_id == user.id).first()
+    if not l:
+        raise HTTPException(404, "Link not found")
+    db.delete(l)
+    db.commit()
+    return {"message": "Link deleted"}
+
+
+# ---- profiles ----
+@app.get("/api/me/profile")
+async def get_my_profile(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return profile_payload(user, db)
+
+
+@app.put("/api/me/profile")
+async def update_my_profile(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if "headline" in data:
+        user.headline = (data.get("headline") or "").strip() or None
+    if "bio" in data:
+        user.bio = (data.get("bio") or "").strip() or None
+    if "avatar_url" in data:
+        user.avatar_url = (data.get("avatar_url") or "").strip() or None
+    if "is_public" in data:
+        user.profile_public = bool(data.get("is_public"))
+    if "theme" in data:
+        theme = data.get("theme")
+        user.profile_theme = theme if theme in VALID_THEMES else None
+    if "layout" in data and isinstance(data.get("layout"), list):
+        user.profile_layout = json.dumps(data["layout"])
+    db.commit()
+    return profile_payload(user, db)
+
+
+@app.get("/api/profiles/{username}")
+async def get_public_profile(username: str, viewer: User = Depends(get_optional_user), db: Session = Depends(get_db)):
+    """Public profile page data. Private profiles are visible only to their owner."""
+    user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
+    if not user:
+        raise HTTPException(404, "Profile not found")
+    is_owner = viewer is not None and viewer.id == user.id
+    if not user.profile_public and not is_owner:
+        raise HTTPException(403, "This profile is private")
+    return profile_payload(user, db)
 
 # ===================== COMMENTS =====================
 @app.get("/api/writing/{slug}/comments")

@@ -1,10 +1,9 @@
 import Admin from "./pages/Admin";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import Layout from "./components/Layout";
 import Section from "./components/Section";
-import Card from "./components/Card";
 
 import Writing from "./pages/Writing";
 import WritingPost from "./pages/WritingPost";
@@ -12,10 +11,10 @@ import Videos from "./pages/Videos";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Account from "./pages/Account";
+import Profile from "./pages/Profile";
 import AdminThemeSwitcher from "./components/AdminThemeSwitcher";
 
 import { API_BASE } from "./lib/config";
-import { apiFetch } from "./lib/api";
 import { useAuth } from "./lib/auth";
 
 export default function App() {
@@ -29,6 +28,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/account" element={<Account />} />
+        <Route path="/u/:username" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
       <AdminThemeSwitcher />
@@ -56,100 +56,33 @@ function extractThumbnail(post: WritingPost): string | null {
 
 function Home() {
   const session = useAuth();
-  const [profile, setProfile] = useState<any>(null);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [links, setLinks] = useState<any[]>([]);
   const [articles, setArticles] = useState<WritingPost[]>([]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/profile`)
-      .then(res => res.json())
-      .then(data => setProfile(data));
-
-    fetch(`${API_BASE}/api/links`)
-      .then(res => res.json())
-      .then(data => setLinks(data));
-
     fetch(`${API_BASE}/api/writing`)
       .then(res => res.json())
-      .then(data => setArticles(data.slice(0, 3)))
+      .then(data => setArticles(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, []);
 
-  // Projects are per-user: logged-in users see their own, logged-out visitors
-  // see the owner's. Refetch whenever the auth session changes.
-  useEffect(() => {
-    apiFetch("/api/projects")
-      .then(res => res.json())
-      .then(data => setProjects(Array.isArray(data) ? data : []))
-      .catch(() => setProjects([]));
-  }, [session]);
+  // Logged-in users land on their own profile; the public home is the articles feed.
+  if (session) {
+    return <Navigate to={`/u/${session.user.username}`} replace />;
+  }
 
   return (
     <Layout>
-      {/* Profile Section */}
-      <Section>
-        {profile && (
-          <div>
-            <h1 className="text-5xl font-bold text-text">{profile.name}</h1>
-            <p className="text-xl text-muted mt-2">{profile.tagline}</p>
-            <p className="text-muted mt-6 max-w-2xl">{profile.bio}</p>
-          </div>
-        )}
-      </Section>
-
-      {/* Projects */}
-      <Section title="Projects">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {projects.map((project: any) => (
-            <Card key={project.id || project.title}>
-              <h3 className="text-2xl font-semibold">{project.title}</h3>
-              <p className="text-muted mt-2">{project.description}</p>
-              {project.status && (
-                <span className="inline-block mt-4 text-xs px-3 py-1 bg-surface-2 text-muted rounded-full">
-                  {project.status}
-                </span>
-              )}
-            </Card>
-          ))}
-        </div>
-      </Section>
-
-      {/* Links */}
-      <Section title="Links">
-        <div className="flex flex-wrap gap-4">
-          {links.map((link: any) => (
-            <a
-              key={link.id || link.label}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-6 py-3 bg-surface border border-line rounded-btn hover:border-line-strong transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
-
-          {/* Videos Link */}
-          <a
-            href="/videos"
-            className="px-6 py-3 bg-surface border border-line rounded-btn hover:border-line-strong transition-colors flex items-center gap-2"
-          >
-            📺 Videos
-          </a>
-        </div>
-      </Section>
-
-      {/* Latest Articles */}
-      {articles.length > 0 && (
-        <Section title="Latest Articles">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Section title="Latest">
+        {articles.length === 0 ? (
+          <p className="text-muted">No articles yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {articles.map((post) => {
               const thumb = extractThumbnail(post);
               return (
                 <Link key={post.slug} to={`/writing/${post.slug}`} className="block group">
                   {thumb && (
-                    <div className="w-full h-40 rounded-xl overflow-hidden mb-3">
+                    <div className="w-full h-44 rounded-xl overflow-hidden mb-3">
                       <img
                         src={thumb}
                         alt={post.title}
@@ -166,16 +99,8 @@ function Home() {
               );
             })}
           </div>
-          <div className="mt-6">
-            <Link
-              to="/writing"
-              className="text-sm font-medium text-text hover:text-muted transition-colors"
-            >
-              View all articles →
-            </Link>
-          </div>
-        </Section>
-      )}
+        )}
+      </Section>
     </Layout>
   );
 }

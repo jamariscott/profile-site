@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import PageNav from "../components/PageNav";
 import { apiJson, apiFetch } from "../lib/api";
 import { useAuth, clearSession } from "../lib/auth";
+import { THEMES, type ThemeId } from "../lib/themes";
 
 interface MyComment {
   id: number;
@@ -18,6 +19,24 @@ interface MyProject {
   description: string | null;
   status: string | null;
 }
+
+interface MyLink {
+  id: number;
+  label: string;
+  href: string;
+  note: string | null;
+}
+
+interface LayoutSection {
+  type: string;
+  visible: boolean;
+}
+
+const SECTION_LABELS: Record<string, string> = {
+  about: "About",
+  projects: "Projects",
+  links: "Links",
+};
 
 export default function Account() {
   const session = useAuth();
@@ -74,6 +93,110 @@ export default function Account() {
     }
   };
 
+  // public profile editor
+  const [headline, setHeadline] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [isPublic, setIsPublic] = useState(true);
+  const [profileTheme, setProfileTheme] = useState<ThemeId | "">("");
+  const [layout, setLayout] = useState<LayoutSection[]>([]);
+  const [profSaving, setProfSaving] = useState(false);
+  const [profNotice, setProfNotice] = useState("");
+
+  // links
+  const [links, setLinks] = useState<MyLink[]>([]);
+  const [lLabel, setLLabel] = useState("");
+  const [lHref, setLHref] = useState("");
+  const [lError, setLError] = useState("");
+
+  const loadProfile = () => {
+    apiJson<any>("/api/me/profile")
+      .then((p) => {
+        setHeadline(p.headline || "");
+        setBio(p.bio || "");
+        setAvatarUrl(p.avatar_url || "");
+        setIsPublic(p.is_public !== false);
+        setProfileTheme(p.theme || "");
+        setLayout(Array.isArray(p.layout) ? p.layout : []);
+        setLinks(Array.isArray(p.links) ? p.links : []);
+      })
+      .catch(() => {});
+  };
+
+  const saveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfNotice("");
+    setProfSaving(true);
+    try {
+      const res = await apiFetch("/api/me/profile", {
+        method: "PUT",
+        body: JSON.stringify({
+          headline,
+          bio,
+          avatar_url: avatarUrl,
+          is_public: isPublic,
+          theme: profileTheme || null,
+          layout,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || "Could not save profile");
+      }
+      setProfNotice("Profile saved.");
+    } catch (err: any) {
+      setProfNotice(err?.message || "Could not save profile");
+    } finally {
+      setProfSaving(false);
+    }
+  };
+
+  const toggleSection = (idx: number) => {
+    setLayout((prev) => prev.map((s, i) => (i === idx ? { ...s, visible: !s.visible } : s)));
+  };
+
+  const moveSection = (idx: number, dir: -1 | 1) => {
+    setLayout((prev) => {
+      const next = [...prev];
+      const j = idx + dir;
+      if (j < 0 || j >= next.length) return prev;
+      [next[idx], next[j]] = [next[j], next[idx]];
+      return next;
+    });
+  };
+
+  const addLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLError("");
+    if (!lLabel.trim() || !lHref.trim()) {
+      setLError("Label and URL are required.");
+      return;
+    }
+    try {
+      const res = await apiFetch("/api/me/links", {
+        method: "POST",
+        body: JSON.stringify({ label: lLabel, href: lHref }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Could not add link");
+      setLLabel("");
+      setLHref("");
+      setLinks((prev) => [...prev, data]);
+    } catch (err: any) {
+      setLError(err?.message || "Could not add link");
+    }
+  };
+
+  const deleteLink = async (id: number) => {
+    try {
+      const res = await apiFetch(`/api/me/links/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setLinks((prev) => prev.filter((l) => l.id !== id));
+    } catch (err: any) {
+      alert(err?.message || "Failed to delete");
+    }
+  };
+
   // change-password form
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -117,6 +240,7 @@ export default function Account() {
       .catch(() => {})
       .finally(() => setLoading(false));
     loadProjects();
+    loadProfile();
   }, [session, navigate]);
 
   if (!session) return null;
@@ -136,14 +260,19 @@ export default function Account() {
             <h1 className="text-4xl font-bold text-text">My Account</h1>
             <p className="text-muted mt-1">Welcome back, {user.username}.</p>
           </div>
-          <button onClick={logout} className="text-sm text-muted hover:text-text transition-colors">
-            Log out
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <Link to={`/u/${user.username}`} className="text-sm text-accent hover:text-accent-hover font-medium">
+              View my public profile →
+            </Link>
+            <button onClick={logout} className="text-sm text-muted hover:text-text transition-colors">
+              Log out
+            </button>
+          </div>
         </div>
 
-        {/* Profile card */}
+        {/* Account card */}
         <div className="border border-line bg-surface rounded-card p-6 mb-10 shadow-card">
-          <h2 className="text-lg font-semibold text-text mb-4">Profile</h2>
+          <h2 className="text-lg font-semibold text-text mb-4">Account</h2>
           <dl className="space-y-2 text-sm">
             <div className="flex gap-3">
               <dt className="text-muted w-24">Username</dt>
@@ -168,10 +297,143 @@ export default function Account() {
           )}
         </div>
 
+        {/* Public profile editor */}
+        <div className="border border-line bg-surface rounded-card p-6 mb-10 shadow-card">
+          <h2 className="text-lg font-semibold text-text mb-4">Public Profile</h2>
+          <form onSubmit={saveProfile} className="space-y-4">
+            <div>
+              <label className="block text-sm text-muted mb-1">Headline</label>
+              <input
+                type="text"
+                placeholder="e.g. Producer & songwriter"
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-muted mb-1">Bio</label>
+              <textarea
+                placeholder="A few sentences about you…"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={4}
+                className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-muted mb-1">Avatar image URL</label>
+              <input
+                type="url"
+                placeholder="https://…"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                className="border border-line bg-surface text-text p-3 w-full rounded-btn"
+              />
+            </div>
+
+            {/* Theme picker */}
+            <div>
+              <label className="block text-sm text-muted mb-2">Profile theme</label>
+              <div className="flex flex-wrap gap-2">
+                {THEMES.map((t) => (
+                  <button
+                    type="button"
+                    key={t.id}
+                    onClick={() => setProfileTheme(t.id)}
+                    className={`px-3 py-1.5 rounded-btn border text-sm ${
+                      profileTheme === t.id ? "border-accent bg-surface-2 text-text" : "border-line text-muted hover:bg-surface-2"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setProfileTheme("")}
+                  className={`px-3 py-1.5 rounded-btn border text-sm ${
+                    profileTheme === "" ? "border-accent bg-surface-2 text-text" : "border-line text-muted hover:bg-surface-2"
+                  }`}
+                >
+                  Site default
+                </button>
+              </div>
+            </div>
+
+            {/* Sections (toggle + reorder) */}
+            <div>
+              <label className="block text-sm text-muted mb-2">Sections (show/hide and reorder)</label>
+              <div className="space-y-2">
+                {layout.map((s, i) => (
+                  <div key={s.type} className="flex items-center gap-3 border border-line rounded-btn p-2.5">
+                    <input type="checkbox" checked={s.visible} onChange={() => toggleSection(i)} className="w-4 h-4" />
+                    <span className="text-text text-sm flex-1">{SECTION_LABELS[s.type] || s.type}</span>
+                    <button type="button" onClick={() => moveSection(i, -1)} disabled={i === 0} className="text-muted hover:text-text disabled:opacity-30 px-1">↑</button>
+                    <button type="button" onClick={() => moveSection(i, 1)} disabled={i === layout.length - 1} className="text-muted hover:text-text disabled:opacity-30 px-1">↓</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Public toggle */}
+            <label className="flex items-center gap-2 text-sm text-text cursor-pointer">
+              <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} className="w-4 h-4" />
+              Make my profile public (anyone with the link can view it)
+            </label>
+
+            {profNotice && <p className="text-success text-sm">{profNotice}</p>}
+            <button
+              type="submit"
+              disabled={profSaving}
+              className="bg-accent text-accent-contrast px-6 py-2.5 rounded-btn font-medium disabled:opacity-50"
+            >
+              {profSaving ? "Saving…" : "Save profile"}
+            </button>
+          </form>
+        </div>
+
+        {/* Links */}
+        <div className="border border-line bg-surface rounded-card p-6 mb-10 shadow-card">
+          <h2 className="text-lg font-semibold text-text mb-4">Links</h2>
+          {links.length > 0 && (
+            <div className="space-y-2 mb-4">
+              {links.map((l) => (
+                <div key={l.id} className="flex items-center justify-between gap-3 border border-line rounded-btn p-3">
+                  <div className="min-w-0">
+                    <span className="text-text text-sm font-medium">{l.label}</span>
+                    <span className="text-subtle text-xs block truncate">{l.href}</span>
+                  </div>
+                  <button onClick={() => deleteLink(l.id)} className="text-danger hover:opacity-80 text-sm shrink-0">Delete</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <form onSubmit={addLink} className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              placeholder="Label (e.g. Instagram)"
+              value={lLabel}
+              onChange={(e) => setLLabel(e.target.value)}
+              className="border border-line bg-surface text-text p-3 rounded-btn sm:w-44"
+            />
+            <input
+              type="url"
+              placeholder="https://…"
+              value={lHref}
+              onChange={(e) => setLHref(e.target.value)}
+              className="border border-line bg-surface text-text p-3 rounded-btn flex-1"
+            />
+            <button type="submit" className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium whitespace-nowrap">
+              Add link
+            </button>
+          </form>
+          {lError && <p className="text-danger text-sm mt-2">{lError}</p>}
+        </div>
+
         {/* My projects */}
         <div className="border border-line bg-surface rounded-card p-6 mb-10 shadow-card">
           <h2 className="text-lg font-semibold text-text mb-4">My Projects</h2>
-          <p className="text-muted text-sm mb-4">These show in the Projects section of the homepage when you're logged in.</p>
+          <p className="text-muted text-sm mb-4">These show in the Projects section of your public profile.</p>
 
           {projects.length > 0 && (
             <div className="space-y-3 mb-6">
