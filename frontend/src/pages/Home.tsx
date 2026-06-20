@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PageNav from "../components/PageNav";
 import Footer from "../components/Footer";
+import HuffPostNav from "../components/HuffPostNav";
+import HuffPostFooter from "../components/HuffPostFooter";
+import DailyWireNav from "../components/DailyWireNav";
+import DailyWireFooter from "../components/DailyWireFooter";
 import { API_BASE } from "../lib/config";
 import { useAuth, type AuthSession } from "../lib/auth";
 import { useLayout } from "../theme/LayoutProvider";
@@ -154,7 +158,7 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
 
   return (
     <div className="bg-bg min-h-screen flex flex-col">
-      <PageNav />
+      <HuffPostNav />
 
       <section className="border-b border-line bg-surface">
         <div className="max-w-6xl mx-auto px-6 py-14 text-center">
@@ -241,7 +245,7 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
         )}
       </div>
 
-      <Footer />
+      <HuffPostFooter />
     </div>
   );
 }
@@ -252,7 +256,7 @@ function DailyWireHome({ session, hero, rest }: VariantProps) {
 
   return (
     <div className="bg-bg min-h-screen flex flex-col">
-      <PageNav />
+      <DailyWireNav />
 
       <section className="border-b border-line">
         <div className="max-w-4xl mx-auto px-6 py-16 text-center">
@@ -328,7 +332,7 @@ function DailyWireHome({ session, hero, rest }: VariantProps) {
         )}
       </div>
 
-      <Footer />
+      <DailyWireFooter />
     </div>
   );
 }
