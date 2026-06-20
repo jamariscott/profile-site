@@ -104,6 +104,10 @@ init_database()
 DEFAULT_THEME = "classic"
 VALID_THEMES = {"classic", "huffpost", "twilight", "music"}
 
+# ---- Site settings (homepage layout) ----
+DEFAULT_LAYOUT = "classic"
+VALID_LAYOUTS = {"classic", "huffpost", "dailywire"}
+
 
 def get_setting(db: Session, key: str, default=None):
     row = db.query(Setting).filter(Setting.key == key).first()
@@ -273,11 +277,14 @@ async def get_writing_post(slug: str, db: Session = Depends(get_db)):
 
 @app.get("/api/settings")
 async def get_settings(db: Session = Depends(get_db)):
-    """Public: returns global site settings (the active theme). Read on every page load."""
+    """Public: returns global site settings (the active theme and homepage layout). Read on every page load."""
     theme = get_setting(db, "active_theme", DEFAULT_THEME)
     if theme not in VALID_THEMES:
         theme = DEFAULT_THEME
-    return {"theme": theme}
+    layout = get_setting(db, "active_layout", DEFAULT_LAYOUT)
+    if layout not in VALID_LAYOUTS:
+        layout = DEFAULT_LAYOUT
+    return {"theme": theme, "layout": layout}
 
 # ===================== AUTH =====================
 EMAIL_RE = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
@@ -685,6 +692,15 @@ async def set_theme(data: dict, admin: User = Depends(require_admin), db: Sessio
         raise HTTPException(400, f"Invalid theme. Must be one of: {', '.join(sorted(VALID_THEMES))}")
     set_setting(db, "active_theme", theme)
     return {"theme": theme}
+
+@app.put("/api/admin/settings/layout")
+async def set_layout(data: dict, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Admin-only: set the global homepage layout for the whole site."""
+    layout = data.get("layout")
+    if layout not in VALID_LAYOUTS:
+        raise HTTPException(400, f"Invalid layout. Must be one of: {', '.join(sorted(VALID_LAYOUTS))}")
+    set_setting(db, "active_layout", layout)
+    return {"layout": layout}
 
 # ===================== ADMIN: WRITING =====================
 def post_to_x(post: Writing) -> dict:

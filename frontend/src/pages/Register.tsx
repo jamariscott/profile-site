@@ -40,7 +40,7 @@ export default function Register() {
         }),
       });
       setSession(data);
-      navigate("/account");
+      navigate("/");
     } catch (err: any) {
       setError(err?.message || "Registration failed");
     } finally {

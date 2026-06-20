@@ -27,7 +27,7 @@ export default function Login() {
       });
       setSession(data);
       const next = params.get("next");
-      navigate(next || (data.user.role === "admin" ? "/admin" : "/account"));
+      navigate(next || "/");
     } catch (err: any) {
       setError(err?.message || "Login failed");
     } finally {
