@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import PageNav from "../components/PageNav";
+import SiteNav from "../components/SiteNav";
 import { apiJson } from "../lib/api";
 import { setSession, type AuthSession } from "../lib/auth";
 
@@ -37,7 +37,7 @@ export default function Login() {
 
   return (
     <div className="bg-bg min-h-screen">
-      <PageNav />
+      <SiteNav />
       <div className="max-w-md mx-auto px-6 py-16">
         <h1 className="text-3xl font-bold text-text mb-6">Log in</h1>
         <form onSubmit={submit} className="space-y-4">

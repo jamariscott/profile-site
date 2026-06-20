@@ -1,16 +1,14 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useTheme } from "../theme/ThemeProvider";
-import { isDarkTheme } from "../lib/themes";
+import { useDarkMode } from "../theme/DarkModeProvider";
+import DarkModeToggle from "./DarkModeToggle";
 
 const RED = "#db3d3b";
 
 export default function DailyWireFooter() {
   const session = useAuth();
-  const { theme } = useTheme();
-  const dark = isDarkTheme(theme);
-  const [light, setLight] = useState(false);
+  const { mode } = useDarkMode();
+  const dark = mode === "dark";
 
   const bg = dark ? "#0a0909" : "#f5f5f5";
   const border = dark ? "#1f1f1f" : "#e0e0e0";
@@ -104,14 +102,10 @@ export default function DailyWireFooter() {
             <span className="opacity-70" aria-hidden>
               &#9711;
             </span>
-            <button
-              onClick={() => setLight((v) => !v)}
-              aria-label="Toggle display mode"
+            <DarkModeToggle
               className="ml-3 w-8 h-8 rounded-full flex items-center justify-center"
               style={{ background: border, color: dark ? "#e5e5e5" : "#333333" }}
-            >
-              <span aria-hidden>{light ? "☾" : "☀"}</span>
-            </button>
+            />
           </div>
         </div>
       </div>

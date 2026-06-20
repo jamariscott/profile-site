@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE } from '../lib/config';
-import PageNav from '../components/PageNav';
+import SiteNav from '../components/SiteNav';
 
 interface WritingPost {
   slug: string;
@@ -43,7 +43,7 @@ export default function Writing() {
 
   if (posts.length === 0) return (
     <div className="bg-bg min-h-screen">
-      <PageNav />
+      <SiteNav />
       <div className="max-w-5xl mx-auto px-6 py-12">
         <h1 className="text-5xl font-bold text-text mb-10">Writing</h1>
         <p className="text-muted">No posts yet.</p>
@@ -56,7 +56,7 @@ export default function Writing() {
 
   return (
     <div className="bg-bg min-h-screen">
-      <PageNav />
+      <SiteNav />
       <div className="max-w-5xl mx-auto px-6 py-12">
         <h1 className="text-5xl font-bold text-text mb-10">Writing</h1>
 

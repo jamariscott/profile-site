@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useTheme } from "../theme/ThemeProvider";
-import { isDarkTheme } from "../lib/themes";
+import { useDarkMode } from "../theme/DarkModeProvider";
+import DarkModeToggle from "./DarkModeToggle";
 
 const LIGHT_BG = "#00614f";
 const DARK_BG = "#0a1a16";
@@ -16,9 +16,9 @@ function navLinkClass(isActive: boolean) {
 
 export default function HuffPostNav() {
   const session = useAuth();
-  const { theme } = useTheme();
+  const { mode } = useDarkMode();
   const [open, setOpen] = useState(false);
-  const bg = isDarkTheme(theme) ? DARK_BG : LIGHT_BG;
+  const bg = mode === "dark" ? DARK_BG : LIGHT_BG;
 
   return (
     <>
@@ -52,6 +52,7 @@ export default function HuffPostNav() {
             >
               SUPPORT US
             </Link>
+            <DarkModeToggle className="w-7 h-7 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors" />
             {session ? (
               <NavLink to="/account" className={({ isActive }) => navLinkClass(isActive)}>
                 Account

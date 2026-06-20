@@ -1,15 +1,14 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useTheme } from "../theme/ThemeProvider";
-import { isDarkTheme } from "../lib/themes";
+import { useDarkMode } from "../theme/DarkModeProvider";
 
 const LIGHT_BG = "#00614f";
 const DARK_BG = "#0a1a16";
 
 export default function HuffPostFooter() {
   const session = useAuth();
-  const { theme } = useTheme();
-  const bg = isDarkTheme(theme) ? DARK_BG : LIGHT_BG;
+  const { mode } = useDarkMode();
+  const bg = mode === "dark" ? DARK_BG : LIGHT_BG;
 
   return (
     <footer style={{ background: bg }}>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import PageNav from "../components/PageNav";
+import SiteNav from "../components/SiteNav";
 import { apiJson, apiFetch } from "../lib/api";
 import { fetchOEmbedTitle } from "../lib/oembed";
 import { useAuth, clearSession } from "../lib/auth";
@@ -311,7 +311,7 @@ export default function Account() {
 
   return (
     <div className="bg-bg min-h-screen">
-      <PageNav />
+      <SiteNav />
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="flex justify-between items-start mb-8">
           <div>

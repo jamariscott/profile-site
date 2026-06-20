@@ -1,7 +1,7 @@
 import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useTheme } from "../theme/ThemeProvider";
-import { isDarkTheme } from "../lib/themes";
+import { useDarkMode } from "../theme/DarkModeProvider";
+import DarkModeToggle from "./DarkModeToggle";
 
 const RED = "#db3d3b";
 
@@ -11,8 +11,8 @@ function navLinkClass(isActive: boolean) {
 
 export default function DailyWireNav() {
   const session = useAuth();
-  const { theme } = useTheme();
-  const dark = isDarkTheme(theme);
+  const { mode } = useDarkMode();
+  const dark = mode === "dark";
 
   const bg = dark ? "#0a0909" : "#f5f5f5";
   const border = dark ? "#1f1f1f" : "#e0e0e0";
@@ -49,6 +49,7 @@ export default function DailyWireNav() {
           <span className="opacity-80 hidden sm:inline" aria-hidden>
             &#128269;
           </span>
+          <DarkModeToggle className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70 transition-opacity" />
           {session ? (
             <Link to="/account" style={{ color: "inherit" }}>
               Account

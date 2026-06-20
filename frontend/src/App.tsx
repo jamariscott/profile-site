@@ -9,7 +9,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Account from "./pages/Account";
 import Profile from "./pages/Profile";
-import AdminThemeSwitcher from "./components/AdminThemeSwitcher";
+import AdminLayoutSwitcher from "./components/AdminLayoutSwitcher";
 
 export default function App() {
   return (
@@ -25,7 +25,7 @@ export default function App() {
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
-      <AdminThemeSwitcher />
+      <AdminLayoutSwitcher />
     </>
   );
 }

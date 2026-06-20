@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_BASE } from '../lib/config';
-import PageNav from '../components/PageNav';
+import SiteNav from '../components/SiteNav';
 
 interface Video {
   id: number;
@@ -41,7 +41,7 @@ export default function Videos() {
 
   return (
     <div className="bg-bg min-h-screen">
-      <PageNav />
+      <SiteNav />
       <div className="max-w-4xl mx-auto px-6 py-12">
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-5xl font-bold text-text">Videos</h1>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { API_BASE } from '../lib/config';
-import PageNav from '../components/PageNav';
+import SiteNav from '../components/SiteNav';
 import Comments from '../components/Comments';
 
 interface WritingPost {
@@ -39,7 +39,7 @@ export default function WritingPost() {
 
   return (
     <div className="bg-bg min-h-screen">
-      <PageNav />
+      <SiteNav />
       <article className="pb-24">
         {/* Header */}
         <header className="max-w-3xl mx-auto px-6 mt-10 mb-8">

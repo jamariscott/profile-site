@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import RichTextEditor from '../components/RichTextEditor';
-import PageNav from '../components/PageNav';
+import SiteNav from '../components/SiteNav';
 import { apiFetch, apiJson } from '../lib/api';
 import { useAuth, setSession, clearSession, type AuthSession } from '../lib/auth';
 
@@ -191,7 +191,7 @@ export default function Admin() {
   if (!session) {
     return (
       <div className="bg-bg min-h-screen">
-        <PageNav />
+        <SiteNav />
         <div className="max-w-md mx-auto px-6 py-16">
           <h1 className="text-3xl font-bold text-text mb-6">Admin Login</h1>
           <input
@@ -226,7 +226,7 @@ export default function Admin() {
   if (!isAdmin) {
     return (
       <div className="bg-bg min-h-screen">
-        <PageNav />
+        <SiteNav />
         <div className="max-w-md mx-auto px-6 py-16 text-center">
           <h1 className="text-3xl font-bold text-text mb-3">Admins only</h1>
           <p className="text-muted mb-6">
@@ -243,7 +243,7 @@ export default function Admin() {
   // === RENDER: admin ===
   return (
     <div className="bg-bg min-h-screen">
-      <PageNav />
+      <SiteNav />
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-text">Admin Panel</h1>

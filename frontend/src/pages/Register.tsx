@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import PageNav from "../components/PageNav";
+import SiteNav from "../components/SiteNav";
 import { apiJson } from "../lib/api";
 import { setSession, type AuthSession } from "../lib/auth";
 
@@ -50,7 +50,7 @@ export default function Register() {
 
   return (
     <div className="bg-bg min-h-screen">
-      <PageNav />
+      <SiteNav />
       <div className="max-w-md mx-auto px-6 py-16">
         <h1 className="text-3xl font-bold text-text mb-2">Create an account</h1>
         <p className="text-muted text-sm mb-6">Join to comment and access members-only areas.</p>

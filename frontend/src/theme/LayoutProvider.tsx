@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -40,6 +41,12 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const [saving, setSaving] = useState(false);
   const currentLayout = useRef(layout);
   currentLayout.current = layout;
+
+  // Layout now also carries the site's color identity (accent/font/radius)
+  // via the [data-layout] CSS blocks in index.css — not just homepage structure.
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute("data-layout", layout);
+  }, [layout]);
 
   // Reconcile with the server's global layout on load.
   useEffect(() => {

@@ -100,8 +100,7 @@ def init_database():
 
 init_database()
 
-# ---- Site settings (theme) ----
-DEFAULT_THEME = "classic"
+# ---- Per-profile theme (artists customizing their own public profile) ----
 VALID_THEMES = {"classic", "huffpost", "twilight", "music"}
 
 # ---- Site settings (homepage layout) ----
@@ -277,14 +276,11 @@ async def get_writing_post(slug: str, db: Session = Depends(get_db)):
 
 @app.get("/api/settings")
 async def get_settings(db: Session = Depends(get_db)):
-    """Public: returns global site settings (the active theme and homepage layout). Read on every page load."""
-    theme = get_setting(db, "active_theme", DEFAULT_THEME)
-    if theme not in VALID_THEMES:
-        theme = DEFAULT_THEME
+    """Public: returns global site settings (the active homepage layout). Read on every page load."""
     layout = get_setting(db, "active_layout", DEFAULT_LAYOUT)
     if layout not in VALID_LAYOUTS:
         layout = DEFAULT_LAYOUT
-    return {"theme": theme, "layout": layout}
+    return {"layout": layout}
 
 # ===================== AUTH =====================
 EMAIL_RE = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
@@ -684,15 +680,6 @@ async def admin_delete_comment(comment_id: int, admin: User = Depends(require_ad
     return {"message": "Comment deleted"}
 
 # ===================== ADMIN: SETTINGS =====================
-@app.put("/api/admin/settings/theme")
-async def set_theme(data: dict, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
-    """Admin-only: set the global active theme for the whole site."""
-    theme = data.get("theme")
-    if theme not in VALID_THEMES:
-        raise HTTPException(400, f"Invalid theme. Must be one of: {', '.join(sorted(VALID_THEMES))}")
-    set_setting(db, "active_theme", theme)
-    return {"theme": theme}
-
 @app.put("/api/admin/settings/layout")
 async def set_layout(data: dict, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
     """Admin-only: set the global homepage layout for the whole site."""
