@@ -41,7 +41,7 @@ export default function HuffPostNav() {
           </div>
           <div className="justify-self-center">
             <Link to="/" className="text-white font-black italic text-2xl md:text-3xl tracking-tight">
-              TimezofToday
+              Timez of Today
             </Link>
           </div>
           <div className="flex items-center gap-4 text-sm justify-self-end">

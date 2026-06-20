@@ -7,7 +7,7 @@ export default function Footer() {
   return (
     <footer className="border-t border-line">
       <div className="max-w-5xl mx-auto px-6 py-8 flex flex-wrap items-center justify-between gap-4 text-sm text-muted">
-        <span>© {new Date().getFullYear()} TimezofToday</span>
+        <span>© {new Date().getFullYear()} Timez of Today</span>
         <div className="flex items-center gap-6">
           <Link to="/writing" className="hover:text-text transition-colors">
             Writing

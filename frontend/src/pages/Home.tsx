@@ -80,7 +80,7 @@ function ClassicHome({ session, hero, rest }: VariantProps) {
 
       <section className="border-b border-line">
         <div className="max-w-5xl mx-auto px-6 py-20 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-text tracking-tight">TimezofToday</h1>
+          <h1 className="text-5xl md:text-6xl font-bold text-text tracking-tight">Timez of Today</h1>
           <p className="text-lg text-muted mt-5 max-w-2xl mx-auto leading-relaxed">
             Build a profile for whatever you do — show your work, share your links, and tell your story.
             Plus the latest reads from the community.
@@ -164,7 +164,7 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
         <div className="max-w-6xl mx-auto px-6 py-14 text-center">
           <span className="text-xs font-semibold tracking-widest uppercase text-accent">The Daily Read</span>
           <h1 className="font-heading text-5xl md:text-6xl font-bold text-text tracking-tight mt-2">
-            TimezofToday
+            Timez of Today
           </h1>
           <p className="text-muted mt-3 max-w-2xl mx-auto leading-relaxed">
             Build a profile for whatever you do — plus the latest reads from the community.
@@ -260,7 +260,7 @@ function DailyWireHome({ session, hero, rest }: VariantProps) {
 
       <section className="border-b border-line">
         <div className="max-w-4xl mx-auto px-6 py-16 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-text tracking-tight">TimezofToday</h1>
+          <h1 className="text-5xl md:text-6xl font-bold text-text tracking-tight">Timez of Today</h1>
           <p className="text-lg text-muted mt-5 max-w-xl mx-auto leading-relaxed">
             Build a profile for whatever you do. Opinions, stories, and the latest from the community.
           </p>

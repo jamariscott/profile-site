@@ -42,7 +42,7 @@ export default function DailyWireFooter() {
               &#9873;
             </span>
             <Link to="/" className="font-extrabold uppercase tracking-tight" style={{ color: heading }}>
-              TimezofToday
+              Timez of Today
             </Link>
           </div>
           <div className="space-y-2 text-sm">
@@ -91,7 +91,7 @@ export default function DailyWireFooter() {
 
       <div style={{ borderTop: `1px solid ${border}` }}>
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between text-xs" style={{ color: muted }}>
-          <span>&copy; {new Date().getFullYear()} TimezofToday</span>
+          <span>&copy; {new Date().getFullYear()} Timez of Today</span>
           <div className="flex items-center gap-4">
             <span className="opacity-70" aria-hidden>
               &#9711;

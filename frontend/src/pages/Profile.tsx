@@ -72,8 +72,10 @@ export default function Profile() {
   return (
     <div className="bg-bg min-h-screen flex flex-col">
       <SiteNav />
-      <div data-theme={profileTheme} className="max-w-3xl mx-auto px-6 py-12 flex-1 w-full">
-        <ProfileView profile={profile} />
+      <div data-theme={profileTheme} className="bg-bg text-text flex-1 w-full">
+        <div className="max-w-3xl mx-auto px-6 py-12">
+          <ProfileView profile={profile} />
+        </div>
       </div>
       <SiteFooter />
     </div>

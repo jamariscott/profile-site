@@ -16,7 +16,7 @@ export default function HuffPostFooter() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-white text-sm">
           <div>
             <Link to="/" className="font-black italic text-xl">
-              TimezofToday
+              Timez of Today
             </Link>
           </div>
           <div className="space-y-2">
@@ -56,8 +56,8 @@ export default function HuffPostFooter() {
           </div>
         </div>
         <div className="border-t border-white/20 mt-8 pt-6 flex items-center justify-between text-white/70 text-xs">
-          <span>&copy; {new Date().getFullYear()} TimezofToday. All rights reserved.</span>
-          <span>TimezofToday</span>
+          <span>&copy; {new Date().getFullYear()} Timez of Today. All rights reserved.</span>
+          <span>Timez of Today</span>
         </div>
       </div>
     </footer>

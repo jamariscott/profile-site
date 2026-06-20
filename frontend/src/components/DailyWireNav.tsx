@@ -42,7 +42,7 @@ export default function DailyWireNav() {
             className="font-extrabold uppercase tracking-tight text-lg md:text-xl"
             style={{ color: logoText }}
           >
-            TimezofToday
+            Timez of Today
           </Link>
         </div>
         <div className="flex items-center gap-5 text-sm justify-self-end" style={{ color: text }}>
