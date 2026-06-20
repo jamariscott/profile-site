@@ -1,21 +1,28 @@
 import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useTheme } from "../theme/ThemeProvider";
+import { isDarkTheme } from "../lib/themes";
 
-const BG = "#0a0909";
-const BORDER = "#1f1f1f";
 const RED = "#db3d3b";
 
 function navLinkClass(isActive: boolean) {
-  return ["text-sm font-medium transition", isActive ? "text-white" : ""].join(" ");
+  return ["text-sm font-medium transition", isActive ? "underline" : ""].join(" ");
 }
 
 export default function DailyWireNav() {
   const session = useAuth();
+  const { theme } = useTheme();
+  const dark = isDarkTheme(theme);
+
+  const bg = dark ? "#0a0909" : "#f5f5f5";
+  const border = dark ? "#1f1f1f" : "#e0e0e0";
+  const text = dark ? "#e5e5e5" : "#3a3a3a";
+  const logoText = dark ? "#ffffff" : "#111111";
 
   return (
-    <header style={{ background: BG, borderBottom: `1px solid ${BORDER}` }}>
+    <header style={{ background: bg, borderBottom: `1px solid ${border}` }}>
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-3 items-center h-16">
-        <div className="flex items-center gap-6" style={{ color: "#e5e5e5" }}>
+        <div className="flex items-center gap-6" style={{ color: text }}>
           <NavLink to="/" end className={({ isActive }) => navLinkClass(isActive)} style={{ color: "inherit" }}>
             Home
           </NavLink>
@@ -30,18 +37,26 @@ export default function DailyWireNav() {
           <span style={{ color: RED }} aria-hidden>
             &#9873;
           </span>
-          <Link to="/" className="text-white font-extrabold uppercase tracking-tight text-lg md:text-xl">
+          <Link
+            to="/"
+            className="font-extrabold uppercase tracking-tight text-lg md:text-xl"
+            style={{ color: logoText }}
+          >
             TimezofToday
           </Link>
         </div>
-        <div className="flex items-center gap-5 text-sm justify-self-end" style={{ color: "#e5e5e5" }}>
+        <div className="flex items-center gap-5 text-sm justify-self-end" style={{ color: text }}>
           <span className="opacity-80 hidden sm:inline" aria-hidden>
             &#128269;
           </span>
           {session ? (
-            <Link to="/account">Account</Link>
+            <Link to="/account" style={{ color: "inherit" }}>
+              Account
+            </Link>
           ) : (
-            <Link to="/login">Log In</Link>
+            <Link to="/login" style={{ color: "inherit" }}>
+              Log In
+            </Link>
           )}
           <Link
             to="/register"

@@ -1,11 +1,11 @@
-interface EmbedInfo {
+export interface EmbedInfo {
   src: string;
   height: number;
   aspect?: boolean; // 16:9 responsive (YouTube)
 }
 
 /** Turn a public streaming URL into an embeddable player URL. */
-function resolveEmbed(raw: string): EmbedInfo | null {
+export function resolveEmbed(raw: string): EmbedInfo | null {
   const url = raw.trim();
 
   // Spotify: track / album / playlist / artist / episode / show

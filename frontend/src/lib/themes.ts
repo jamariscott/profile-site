@@ -46,3 +46,13 @@ export const THEME_IDS: ThemeId[] = THEMES.map((t) => t.id);
 export function isThemeId(value: unknown): value is ThemeId {
   return typeof value === "string" && (THEME_IDS as string[]).includes(value);
 }
+
+// Light/dark classification, independent of color identity. Layout chrome
+// (HuffPostNav/Footer, DailyWireNav/Footer) reads this so the nav/footer
+// always matches the current theme's light-or-dark mode, instead of clashing
+// (e.g. a bright layout chrome over a dark theme's body).
+const DARK_THEMES: ThemeId[] = ["twilight", "music"];
+
+export function isDarkTheme(id: ThemeId): boolean {
+  return DARK_THEMES.includes(id);
+}

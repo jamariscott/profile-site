@@ -1,13 +1,18 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useTheme } from "../theme/ThemeProvider";
+import { isDarkTheme } from "../lib/themes";
 
-const TEAL = "#00614f";
+const LIGHT_BG = "#00614f";
+const DARK_BG = "#0a1a16";
 
 export default function HuffPostFooter() {
   const session = useAuth();
+  const { theme } = useTheme();
+  const bg = isDarkTheme(theme) ? DARK_BG : LIGHT_BG;
 
   return (
-    <footer style={{ background: TEAL }}>
+    <footer style={{ background: bg }}>
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-white text-sm">
           <div>

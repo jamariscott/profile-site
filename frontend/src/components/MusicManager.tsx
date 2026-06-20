@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiJson, apiFetch } from "../lib/api";
-import TrackEmbed from "./TrackEmbed";
+import { fetchOEmbedTitle } from "../lib/oembed";
+import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
 
 interface Track { id: number; url: string; title: string | null; }
 interface Release { id: number; title: string; year: string | null; cover_url: string | null; link: string | null; }
@@ -17,6 +18,15 @@ export default function MusicManager() {
   const [tUrl, setTUrl] = useState("");
   const [tTitle, setTTitle] = useState("");
   const [tErr, setTErr] = useState("");
+  const [tFetchingTitle, setTFetchingTitle] = useState(false);
+
+  const handleTrackUrlBlur = async () => {
+    if (!tUrl.trim() || tTitle.trim()) return;
+    setTFetchingTitle(true);
+    const title = await fetchOEmbedTitle(tUrl);
+    setTFetchingTitle(false);
+    if (title) setTTitle((current) => (current.trim() ? current : title));
+  };
 
   const [rTitle, setRTitle] = useState("");
   const [rYear, setRYear] = useState("");
@@ -98,19 +108,37 @@ export default function MusicManager() {
       <div>
         <h3 className="text-text font-semibold mb-3">Tracks</h3>
         {tracks.length > 0 && (
-          <div className="space-y-3 mb-4">
-            {tracks.map((t) => (
-              <div key={t.id} className="space-y-2">
-                <TrackEmbed url={t.url} title={t.title} />
-                <button onClick={() => delTrack(t.id)} className="text-danger hover:opacity-80 text-xs">Remove</button>
+          <>
+            {tracks.some((t) => resolveEmbed(t.url)?.aspect) && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                {tracks
+                  .filter((t) => resolveEmbed(t.url)?.aspect)
+                  .map((t) => (
+                    <div key={t.id} className="space-y-1">
+                      <TrackEmbed url={t.url} title={t.title} />
+                      <button onClick={() => delTrack(t.id)} className="text-danger hover:opacity-80 text-xs">Remove</button>
+                    </div>
+                  ))}
               </div>
-            ))}
-          </div>
+            )}
+            {tracks.some((t) => !resolveEmbed(t.url)?.aspect) && (
+              <div className="space-y-3 mb-4">
+                {tracks
+                  .filter((t) => !resolveEmbed(t.url)?.aspect)
+                  .map((t) => (
+                    <div key={t.id} className="space-y-2">
+                      <TrackEmbed url={t.url} title={t.title} />
+                      <button onClick={() => delTrack(t.id)} className="text-danger hover:opacity-80 text-xs">Remove</button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </>
         )}
         <form onSubmit={addTrack} className="space-y-2">
-          <input type="url" placeholder="Paste Spotify / SoundCloud / YouTube / Apple Music link" value={tUrl} onChange={(e) => setTUrl(e.target.value)} className={`${inputClass} w-full`} />
+          <input type="url" placeholder="Paste Spotify / SoundCloud / YouTube / Apple Music link" value={tUrl} onChange={(e) => setTUrl(e.target.value)} onBlur={handleTrackUrlBlur} className={`${inputClass} w-full`} />
           <div className="flex gap-2">
-            <input type="text" placeholder="Title (optional)" value={tTitle} onChange={(e) => setTTitle(e.target.value)} className={`${inputClass} flex-1`} />
+            <input type="text" placeholder={tFetchingTitle ? "Fetching title…" : "Title (optional)"} value={tTitle} onChange={(e) => setTTitle(e.target.value)} className={`${inputClass} flex-1`} />
             <button type="submit" className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium whitespace-nowrap">Add track</button>
           </div>
           {tErr && <p className="text-danger text-sm">{tErr}</p>}

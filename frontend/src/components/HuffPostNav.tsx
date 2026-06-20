@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useTheme } from "../theme/ThemeProvider";
+import { isDarkTheme } from "../lib/themes";
 
-const TEAL = "#00614f";
+const LIGHT_BG = "#00614f";
+const DARK_BG = "#0a1a16";
 
 function navLinkClass(isActive: boolean) {
   return [
@@ -13,11 +16,13 @@ function navLinkClass(isActive: boolean) {
 
 export default function HuffPostNav() {
   const session = useAuth();
+  const { theme } = useTheme();
   const [open, setOpen] = useState(false);
+  const bg = isDarkTheme(theme) ? DARK_BG : LIGHT_BG;
 
   return (
     <>
-      <header style={{ background: TEAL }}>
+      <header style={{ background: bg }}>
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-3 items-center h-16">
           <div className="flex items-center gap-4 justify-self-start">
             <button
@@ -78,7 +83,7 @@ export default function HuffPostNav() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <div
             className="absolute top-0 left-0 h-full w-72 overflow-y-auto p-5 text-white"
-            style={{ background: TEAL }}
+            style={{ background: bg }}
           >
             <button onClick={() => setOpen(false)} aria-label="Close menu" className="text-2xl mb-4">
               &times;

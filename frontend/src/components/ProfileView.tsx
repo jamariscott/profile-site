@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import TrackEmbed from "./TrackEmbed";
+import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
 
 export interface ProfileProject { id: number; title: string; description: string | null; status: string | null; }
 export interface ProfileLink { id: number; label: string; href: string; note: string | null; }
@@ -84,14 +84,25 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
     }
     if (type === "tracks") {
       if (profile.tracks.length === 0) return null;
+      const videoTracks = profile.tracks.filter((t) => resolveEmbed(t.url)?.aspect);
+      const otherTracks = profile.tracks.filter((t) => !resolveEmbed(t.url)?.aspect);
       return (
         <section key="tracks" className="mb-12">
           <h2 className="text-sm font-medium tracking-widest uppercase text-muted mb-4">Music</h2>
-          <div className="space-y-4">
-            {profile.tracks.map((t) => (
-              <TrackEmbed key={t.id} url={t.url} title={t.title} />
-            ))}
-          </div>
+          {videoTracks.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+              {videoTracks.map((t) => (
+                <TrackEmbed key={t.id} url={t.url} title={t.title} />
+              ))}
+            </div>
+          )}
+          {otherTracks.length > 0 && (
+            <div className="space-y-4">
+              {otherTracks.map((t) => (
+                <TrackEmbed key={t.id} url={t.url} title={t.title} />
+              ))}
+            </div>
+          )}
         </section>
       );
     }

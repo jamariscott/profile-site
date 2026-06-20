@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PageNav from "../components/PageNav";
 import { apiJson, apiFetch } from "../lib/api";
+import { fetchOEmbedTitle } from "../lib/oembed";
 import { useAuth, clearSession } from "../lib/auth";
 import { THEMES, type ThemeId } from "../lib/themes";
 import MusicManager from "../components/MusicManager";
@@ -95,6 +96,15 @@ export default function Account() {
   const [lLabel, setLLabel] = useState("");
   const [lHref, setLHref] = useState("");
   const [lError, setLError] = useState("");
+  const [lFetchingLabel, setLFetchingLabel] = useState(false);
+
+  const handleLinkHrefBlur = async () => {
+    if (!lHref.trim() || lLabel.trim()) return;
+    setLFetchingLabel(true);
+    const title = await fetchOEmbedTitle(lHref);
+    setLFetchingLabel(false);
+    if (title) setLLabel((current) => (current.trim() ? current : title));
+  };
 
   // change password
   const [currentPw, setCurrentPw] = useState("");
@@ -429,8 +439,8 @@ export default function Account() {
               </div>
             )}
             <form onSubmit={addLink} className="flex flex-col sm:flex-row gap-2">
-              <input type="text" placeholder="Label (e.g. Instagram)" value={lLabel} onChange={(e) => setLLabel(e.target.value)} className="border border-line bg-surface text-text p-3 rounded-btn sm:w-44" />
-              <input type="url" placeholder="https://…" value={lHref} onChange={(e) => setLHref(e.target.value)} className="border border-line bg-surface text-text p-3 rounded-btn flex-1" />
+              <input type="text" placeholder={lFetchingLabel ? "Fetching title…" : "Label (e.g. Instagram)"} value={lLabel} onChange={(e) => setLLabel(e.target.value)} className="border border-line bg-surface text-text p-3 rounded-btn sm:w-44" />
+              <input type="url" placeholder="https://…" value={lHref} onChange={(e) => setLHref(e.target.value)} onBlur={handleLinkHrefBlur} className="border border-line bg-surface text-text p-3 rounded-btn flex-1" />
               <button type="submit" className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium whitespace-nowrap">Add link</button>
             </form>
             {lError && <p className="text-danger text-sm mt-2">{lError}</p>}
