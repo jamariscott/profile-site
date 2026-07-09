@@ -59,9 +59,9 @@ export default function DailyWireNav() {
             </Link>
           </div>
           <div className="flex items-center gap-3 sm:gap-5 text-sm justify-self-end" style={{ color: text }}>
-            <span className="opacity-80 hidden sm:inline" aria-hidden>
+            <Link to="/search" aria-label="Search" className="opacity-80 hover:opacity-100 hidden sm:inline" style={{ color: "inherit" }}>
               &#128269;
-            </span>
+            </Link>
             <DarkModeToggle className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70 transition-opacity shrink-0" />
             {session ? (
               <Link to="/account" style={{ color: "inherit" }}>

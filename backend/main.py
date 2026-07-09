@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy import func, text, or_
 import json
 import os
 import re
@@ -246,6 +246,33 @@ async def get_links(db: Session = Depends(get_db)):
 @app.get("/api/videos")
 async def get_videos(db: Session = Depends(get_db)):
     return [v.__dict__ for v in db.query(Video).all()]
+
+@app.get("/api/search")
+async def search(q: str = "", db: Session = Depends(get_db)):
+    query = q.strip()
+    if len(query) < 2:
+        return {"profiles": [], "articles": [], "videos": []}
+    like = f"%{query}%"
+
+    users = db.query(User).filter(
+        User.profile_public == True,
+        or_(User.username.ilike(like), User.headline.ilike(like), User.bio.ilike(like),
+            User.first_name.ilike(like), User.last_name.ilike(like)),
+    ).limit(20).all()
+
+    posts = db.query(Writing).filter(
+        or_(Writing.title.ilike(like), Writing.summary.ilike(like), Writing.content.ilike(like))
+    ).order_by(Writing.date.desc()).limit(20).all()
+
+    videos = db.query(Video).filter(
+        or_(Video.title.ilike(like), Video.description.ilike(like))
+    ).limit(20).all()
+
+    return {
+        "profiles": [{"username": u.username, "display_name": display_name(u), "headline": u.headline, "avatar_url": u.avatar_url} for u in users],
+        "articles": [{"slug": p.slug, "title": p.title, "summary": p.summary, "date": p.date.isoformat() if p.date else None} for p in posts],
+        "videos": [{"id": v.id, "title": v.title, "youtube_id": v.youtube_id} for v in videos],
+    }
 
 @app.get("/api/writing")
 async def get_writing(db: Session = Depends(get_db)):

@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Writing from "./pages/Writing";
 import WritingPost from "./pages/WritingPost";
 import Videos from "./pages/Videos";
+import Search from "./pages/Search";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Account from "./pages/Account";
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/writing" element={<Writing />} />
         <Route path="/writing/:slug" element={<WritingPost />} />
         <Route path="/videos" element={<Videos />} />
+        <Route path="/search" element={<Search />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/account" element={<Account />} />

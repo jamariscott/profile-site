@@ -35,9 +35,9 @@ export default function HuffPostNav() {
             <span className="text-white text-lg opacity-80 hidden sm:inline" aria-hidden>
               &#128276;
             </span>
-            <span className="text-white text-lg opacity-80 hidden sm:inline" aria-hidden>
+            <Link to="/search" aria-label="Search" className="text-white text-lg opacity-80 hover:opacity-100 hidden sm:inline">
               &#128269;
-            </span>
+            </Link>
           </div>
           <div className="justify-self-center">
             <Link to="/" className="text-white font-black italic text-2xl md:text-3xl tracking-tight">
