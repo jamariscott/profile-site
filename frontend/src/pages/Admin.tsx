@@ -37,9 +37,18 @@ export default function Admin() {
   const session = useAuth();
   const isAdmin = session?.user.role === 'admin';
 
+  type AdminTab = 'comments' | 'users' | 'articles';
+  const ADMIN_TABS: { id: AdminTab; label: string }[] = [
+    { id: 'comments', label: 'Comments' },
+    { id: 'users', label: 'Users' },
+    { id: 'articles', label: 'Articles' },
+  ];
+  const [tab, setTab] = useState<AdminTab>('comments');
+
   const [posts, setPosts] = useState<WritingPost[]>([]);
   const [comments, setComments] = useState<PendingComment[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [userSearch, setUserSearch] = useState('');
 
   // login form
   const [identifier, setIdentifier] = useState('');
@@ -239,6 +248,17 @@ export default function Admin() {
     }
   };
 
+  const filteredUsers = users.filter(u => {
+    const q = userSearch.trim().toLowerCase();
+    if (!q) return true;
+    const name = `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase();
+    return (
+      u.username.toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
+      name.includes(q)
+    );
+  });
+
   // === RENDER: not logged in ===
   if (!session) {
     return (
@@ -306,7 +326,24 @@ export default function Admin() {
 
         {error && <p className="text-danger mb-6 p-4 bg-surface-2 rounded-btn">{error}</p>}
 
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-1 border-b border-line mb-8">
+          {ADMIN_TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                tab === t.id ? 'border-accent text-text' : 'border-transparent text-muted hover:text-text'
+              }`}
+            >
+              {t.label}
+              {t.id === 'comments' && comments.length > 0 && <span className="text-accent ml-1">({comments.length})</span>}
+            </button>
+          ))}
+        </div>
+
         {/* Pending comments */}
+        {tab === 'comments' && (
         <div className="border border-line rounded-card p-6 mb-10">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-text">
@@ -338,18 +375,29 @@ export default function Admin() {
             </div>
           )}
         </div>
+        )}
 
         {/* Users */}
+        {tab === 'users' && (
         <div className="border border-line rounded-card p-6 mb-10">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold text-text">Users</h2>
             <button onClick={loadUsers} className="text-sm text-muted hover:text-text">Refresh</button>
           </div>
+          <input
+            type="text"
+            placeholder="Search by username, name, or email…"
+            value={userSearch}
+            onChange={e => setUserSearch(e.target.value)}
+            className="border border-line bg-surface text-text p-2.5 w-full rounded-btn text-sm mb-4"
+          />
           {users.length === 0 ? (
             <p className="text-muted text-sm">No users found.</p>
+          ) : filteredUsers.length === 0 ? (
+            <p className="text-muted text-sm">No users match "{userSearch}".</p>
           ) : (
             <div className="space-y-2">
-              {users.map(u => (
+              {filteredUsers.map(u => (
                 <div key={u.id} className="flex items-center justify-between gap-3 border border-line rounded-btn p-3">
                   <div className="min-w-0">
                     <span className="text-text text-sm font-medium">{u.username}</span>
@@ -371,8 +419,10 @@ export default function Admin() {
             </div>
           )}
         </div>
+        )}
 
         {/* Create new post */}
+        {tab === 'articles' && (<>
         <div className="border border-line rounded-card p-6 mb-10">
           <h2 className="text-2xl font-semibold mb-6 text-text">Create New Article</h2>
 
@@ -449,6 +499,7 @@ export default function Admin() {
             </div>
           ))}
         </div>
+        </>)}
       </div>
     </div>
   );
