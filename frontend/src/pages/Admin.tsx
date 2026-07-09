@@ -23,12 +23,23 @@ interface PendingComment {
   created_at: string | null;
 }
 
+interface AdminUser {
+  id: number;
+  username: string;
+  email: string | null;
+  role: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+}
+
 export default function Admin() {
   const session = useAuth();
   const isAdmin = session?.user.role === 'admin';
 
   const [posts, setPosts] = useState<WritingPost[]>([]);
   const [comments, setComments] = useState<PendingComment[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
 
   // login form
   const [identifier, setIdentifier] = useState('');
@@ -73,10 +84,20 @@ export default function Admin() {
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      const data = await apiJson<AdminUser[]>('/api/admin/users');
+      setUsers(data);
+    } catch {
+      /* ignore */
+    }
+  };
+
   useEffect(() => {
     if (isAdmin) {
       loadPosts();
       loadComments();
+      loadUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
@@ -187,6 +208,37 @@ export default function Admin() {
     }
   };
 
+  // === USER MANAGEMENT ===
+  const toggleRole = async (u: AdminUser) => {
+    const nextRole = u.role === 'admin' ? 'member' : 'admin';
+    if (!confirm(`${nextRole === 'admin' ? 'Promote' : 'Demote'} ${u.username} to ${nextRole}?`)) return;
+    try {
+      const res = await apiFetch(`/api/admin/users/${u.id}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role: nextRole }),
+      });
+      if (!res.ok) throw new Error('Failed to update role');
+      loadUsers();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const resetUserPassword = async (u: AdminUser) => {
+    const newPassword = prompt(`New password for ${u.username}:`);
+    if (!newPassword) return;
+    try {
+      const res = await apiFetch(`/api/admin/users/${u.id}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify({ new_password: newPassword }),
+      });
+      if (!res.ok) throw new Error('Failed to reset password');
+      alert(`Password reset for ${u.username}.`);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   // === RENDER: not logged in ===
   if (!session) {
     return (
@@ -279,6 +331,39 @@ export default function Admin() {
                     </button>
                     <button onClick={() => deleteComment(c.id)} className="text-danger text-sm font-medium hover:opacity-80">
                       Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Users */}
+        <div className="border border-line rounded-card p-6 mb-10">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-semibold text-text">Users</h2>
+            <button onClick={loadUsers} className="text-sm text-muted hover:text-text">Refresh</button>
+          </div>
+          {users.length === 0 ? (
+            <p className="text-muted text-sm">No users found.</p>
+          ) : (
+            <div className="space-y-2">
+              {users.map(u => (
+                <div key={u.id} className="flex items-center justify-between gap-3 border border-line rounded-btn p-3">
+                  <div className="min-w-0">
+                    <span className="text-text text-sm font-medium">{u.username}</span>
+                    <span className="text-subtle text-xs block truncate">{u.email || '—'}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${u.role === 'admin' ? 'text-success border border-success/40' : 'text-muted border border-line'}`}>
+                      {u.role}
+                    </span>
+                    <button onClick={() => toggleRole(u)} className="text-accent hover:text-accent-hover text-sm whitespace-nowrap">
+                      {u.role === 'admin' ? 'Demote' : 'Promote'}
+                    </button>
+                    <button onClick={() => resetUserPassword(u)} className="text-muted hover:text-text text-sm whitespace-nowrap">
+                      Reset password
                     </button>
                   </div>
                 </div>

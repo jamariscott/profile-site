@@ -19,21 +19,23 @@ export default function DailyWireFooter() {
 
   return (
     <footer style={{ background: bg, borderTop: `1px solid ${border}` }}>
-      <div className="max-w-6xl mx-auto px-6 py-16 text-center">
-        <h3 className="text-2xl font-bold mb-2" style={{ color: heading }}>
-          Got something worth sharing?
-        </h3>
-        <p className="text-sm mb-6" style={{ color: muted }}>
-          Your work could be the next featured story. Create a profile and show it off.
-        </p>
-        <Link
-          to="/register"
-          style={{ background: pillBg, color: pillText }}
-          className="px-6 py-3 rounded-full font-bold text-sm inline-block hover:opacity-90 transition-opacity"
-        >
-          CREATE PROFILE
-        </Link>
-      </div>
+      {!session && (
+        <div className="max-w-6xl mx-auto px-6 py-16 text-center">
+          <h3 className="text-2xl font-bold mb-2" style={{ color: heading }}>
+            Got something worth sharing?
+          </h3>
+          <p className="text-sm mb-6" style={{ color: muted }}>
+            Your work could be the next featured story. Create a profile and show it off.
+          </p>
+          <Link
+            to="/register"
+            style={{ background: pillBg, color: pillText }}
+            className="px-6 py-3 rounded-full font-bold text-sm inline-block hover:opacity-90 transition-opacity"
+          >
+            CREATE PROFILE
+          </Link>
+        </div>
+      )}
 
       <div style={{ borderTop: `1px solid ${border}` }}>
         <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">

@@ -2,7 +2,7 @@
 // To add a theme: add an entry here, add a matching [data-theme="id"] block in
 // src/index.css, and add the id to VALID_THEMES in the backend (main.py).
 
-export type ThemeId = "classic" | "huffpost" | "twilight" | "music";
+export type ThemeId = "classic" | "huffpost" | "twilight" | "music" | "developer";
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -10,6 +10,13 @@ export interface ThemeMeta {
   description: string;
   /** Small swatches for the switcher preview: [background, surface, accent]. */
   swatch: [string, string, string];
+  /**
+   * "profession" themes are the per-profile module bundles every member picks
+   * (Music, Developer, ...). "general" themes are brand-style skins with no
+   * profession behind them (Classic/HuffPost/Twilight) — admin-only, since
+   * they don't map to any real module bundle for a regular member's profile.
+   */
+  kind: "profession" | "general";
 }
 
 export const THEMES: ThemeMeta[] = [
@@ -18,24 +25,35 @@ export const THEMES: ThemeMeta[] = [
     label: "Classic",
     description: "Clean, minimal, light",
     swatch: ["#fafafa", "#ffffff", "#18181b"],
+    kind: "general",
   },
   {
     id: "huffpost",
     label: "Huffington Post",
     description: "Bold editorial, serif headlines",
     swatch: ["#f5f5f5", "#ffffff", "#0dbe75"],
+    kind: "general",
   },
   {
     id: "twilight",
     label: "Twilight Zone",
     description: "Dark, high-contrast, retro",
     swatch: ["#09090b", "#18181b", "#7dd3fc"],
+    kind: "general",
   },
   {
     id: "music",
     label: "Music",
     description: "Dark, bold, made for artists",
     swatch: ["#0a0a0c", "#141418", "#ec4899"],
+    kind: "profession",
+  },
+  {
+    id: "developer",
+    label: "Developer",
+    description: "Clean, technical, built for makers",
+    swatch: ["#0b0e14", "#111620", "#5eead4"],
+    kind: "profession",
   },
 ];
 

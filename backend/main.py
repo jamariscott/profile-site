@@ -101,7 +101,7 @@ def init_database():
 init_database()
 
 # ---- Per-profile theme (artists customizing their own public profile) ----
-VALID_THEMES = {"classic", "huffpost", "twilight", "music"}
+VALID_THEMES = {"classic", "huffpost", "twilight", "music", "developer"}
 
 # ---- Site settings (homepage layout) ----
 DEFAULT_LAYOUT = "classic"
@@ -678,6 +678,38 @@ async def admin_delete_comment(comment_id: int, admin: User = Depends(require_ad
     db.delete(c)
     db.commit()
     return {"message": "Comment deleted"}
+
+# ===================== ADMIN: USERS =====================
+@app.get("/api/admin/users")
+async def admin_list_users(admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    users = db.query(User).order_by(User.username).all()
+    return [public_user(u) for u in users]
+
+
+@app.put("/api/admin/users/{user_id}/role")
+async def admin_set_role(user_id: int, data: dict, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    role = data.get("role")
+    if role not in ("member", "admin"):
+        raise HTTPException(400, "Role must be 'member' or 'admin'")
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(404, "User not found")
+    target.role = role
+    db.commit()
+    return public_user(target)
+
+
+@app.post("/api/admin/users/{user_id}/reset-password")
+async def admin_reset_password(user_id: int, data: dict, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    new_password = data.get("new_password", "")
+    if len(new_password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters")
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(404, "User not found")
+    target.hashed_password = hash_password(new_password)
+    db.commit()
+    return {"message": "Password reset"}
 
 # ===================== ADMIN: SETTINGS =====================
 @app.put("/api/admin/settings/layout")

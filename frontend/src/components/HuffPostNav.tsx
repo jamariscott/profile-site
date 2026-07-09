@@ -45,13 +45,17 @@ export default function HuffPostNav() {
             </Link>
           </div>
           <div className="flex items-center gap-4 text-sm justify-self-end">
-            <span className="text-white/80 hidden lg:inline whitespace-nowrap">Power Our Journalism</span>
-            <Link
-              to="/register"
-              className="bg-pink-500 text-white px-4 py-2 rounded-full font-bold text-xs whitespace-nowrap hover:bg-pink-600 transition-colors"
-            >
-              SUPPORT US
-            </Link>
+            {!session && (
+              <>
+                <span className="text-white/80 hidden lg:inline whitespace-nowrap">Power Our Journalism</span>
+                <Link
+                  to="/register"
+                  className="bg-pink-500 text-white px-4 py-2 rounded-full font-bold text-xs whitespace-nowrap hover:bg-pink-600 transition-colors"
+                >
+                  SUPPORT US
+                </Link>
+              </>
+            )}
             <DarkModeToggle className="w-7 h-7 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors" />
             {session ? (
               <NavLink to="/account" className={({ isActive }) => navLinkClass(isActive)}>

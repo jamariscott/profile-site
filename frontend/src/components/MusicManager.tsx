@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { apiJson, apiFetch } from "../lib/api";
 import { fetchOEmbedTitle } from "../lib/oembed";
 import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
+import { compressAndResizeImage } from "../lib/upload";
 
 interface Track { id: number; url: string; title: string | null; }
 interface Release { id: number; title: string; year: string | null; cover_url: string | null; link: string | null; }
@@ -31,6 +32,25 @@ export default function MusicManager() {
   const [rTitle, setRTitle] = useState("");
   const [rYear, setRYear] = useState("");
   const [rCover, setRCover] = useState("");
+  const [rCoverUploading, setRCoverUploading] = useState(false);
+  const [rCoverError, setRCoverError] = useState("");
+  const rCoverInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setRCoverError("");
+    setRCoverUploading(true);
+    try {
+      const base64 = await compressAndResizeImage(file, 300, 300);
+      setRCover(base64);
+    } catch (err: any) {
+      setRCoverError(err?.message || "Failed to process image.");
+    } finally {
+      setRCoverUploading(false);
+      if (e.target) e.target.value = "";
+    }
+  };
   const [rLink, setRLink] = useState("");
 
   const [sDate, setSDate] = useState("");
@@ -167,7 +187,49 @@ export default function MusicManager() {
             <input type="text" placeholder="Release title" value={rTitle} onChange={(e) => setRTitle(e.target.value)} className={`${inputClass} flex-1`} />
             <input type="text" placeholder="Year" value={rYear} onChange={(e) => setRYear(e.target.value)} className={`${inputClass} w-24`} />
           </div>
-          <input type="url" placeholder="Cover image URL (optional)" value={rCover} onChange={(e) => setRCover(e.target.value)} className={`${inputClass} w-full`} />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {rCover ? (
+              <img
+                src={rCover}
+                alt="Cover Preview"
+                className="w-16 h-16 rounded object-cover border border-line shrink-0"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              <div className="w-16 h-16 rounded bg-surface-2 border border-line flex items-center justify-center text-subtle text-xs shrink-0">
+                No Cover
+              </div>
+            )}
+            <div className="flex-1 w-full space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Or paste cover URL (optional)"
+                  value={rCover}
+                  onChange={(e) => setRCover(e.target.value)}
+                  className={`${inputClass} flex-1`}
+                />
+                <button
+                  type="button"
+                  onClick={() => rCoverInputRef.current?.click()}
+                  disabled={rCoverUploading}
+                  className="bg-surface-2 border border-line text-text hover:bg-surface-3 hover:border-line-strong px-4 py-2.5 rounded-btn font-medium text-sm whitespace-nowrap transition-all"
+                >
+                  {rCoverUploading ? "Processing…" : "Upload Cover"}
+                </button>
+              </div>
+              <input
+                type="file"
+                ref={rCoverInputRef}
+                onChange={handleRCoverFileChange}
+                accept="image/*"
+                className="hidden"
+              />
+              {rCoverError && <p className="text-danger text-xs">{rCoverError}</p>}
+            </div>
+          </div>
           <div className="flex gap-2">
             <input type="url" placeholder="Link (optional)" value={rLink} onChange={(e) => setRLink(e.target.value)} className={`${inputClass} flex-1`} />
             <button type="submit" className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium whitespace-nowrap">Add release</button>

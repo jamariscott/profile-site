@@ -1,5 +1,33 @@
 import { Link } from "react-router-dom";
 import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
+import {
+  GitHubIcon,
+  SpotifyIcon,
+  TwitterIcon,
+  InstagramIcon,
+  LinkedInIcon,
+  YouTubeIcon,
+  SoundCloudIcon,
+  AppleMusicIcon,
+  TikTokIcon,
+  FacebookIcon,
+  GlobeIcon,
+} from "./icons";
+
+function getLinkIcon(href: string) {
+  const url = href.toLowerCase().trim();
+  if (/github\.com/.test(url)) return <GitHubIcon size={16} className="text-text shrink-0" />;
+  if (/spotify\.com/.test(url)) return <SpotifyIcon size={16} className="text-[#1DB954] shrink-0" />;
+  if (/twitter\.com|x\.com/.test(url)) return <TwitterIcon size={16} className="text-text shrink-0" />;
+  if (/instagram\.com/.test(url)) return <InstagramIcon size={16} className="text-[#E1306C] shrink-0" />;
+  if (/linkedin\.com/.test(url)) return <LinkedInIcon size={16} className="text-[#0A66C2] shrink-0" />;
+  if (/youtube\.com|youtu\.be/.test(url)) return <YouTubeIcon size={16} className="text-[#FF0000] shrink-0" fill="currentColor" />;
+  if (/soundcloud\.com/.test(url)) return <SoundCloudIcon size={16} className="text-[#FF5500] shrink-0" />;
+  if (/music\.apple\.com/.test(url)) return <AppleMusicIcon size={16} className="text-[#FA243C] shrink-0" />;
+  if (/tiktok\.com/.test(url)) return <TikTokIcon size={16} className="text-text shrink-0" />;
+  if (/facebook\.com/.test(url)) return <FacebookIcon size={16} className="text-[#1877F2] shrink-0" />;
+  return <GlobeIcon size={16} className="text-subtle shrink-0" />;
+}
 
 export interface ProfileProject { id: number; title: string; description: string | null; status: string | null; }
 export interface ProfileLink { id: number; label: string; href: string; note: string | null; }
@@ -73,9 +101,10 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
                 href={l.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-5 py-2.5 bg-surface border border-line rounded-btn hover:border-line-strong transition-colors text-text"
+                className="flex items-center gap-2.5 px-5 py-2.5 bg-surface border border-line rounded-btn hover:border-line-strong hover:bg-surface-2 transition-all text-text shadow-sm hover:shadow-md"
               >
-                {l.label}
+                {getLinkIcon(l.href)}
+                <span>{l.label}</span>
               </a>
             ))}
           </div>

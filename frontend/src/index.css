@@ -203,6 +203,32 @@ html[data-layout="dailywire"][data-mode="dark"]:not([data-theme]) {
   color-scheme: dark;
 }
 
+/* ---- DEVELOPER: clean, technical, teal accent (builder profiles) ---- */
+[data-theme="developer"] {
+  --c-bg: 11 14 20;
+  --c-surface: 17 22 32;
+  --c-surface-2: 26 33 46;
+  --c-text: 231 236 240;
+  --c-muted: 148 163 184;
+  --c-subtle: 100 116 139;
+  --c-line: 33 41 56;
+  --c-line-strong: 51 63 84;
+  --c-accent: 94 234 212;        /* teal */
+  --c-accent-hover: 45 212 191;
+  --c-accent-contrast: 11 14 20;
+  --c-danger: 248 113 113;
+  --c-success: 74 222 128;
+
+  --font-heading: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --radius-card: 0.75rem;
+  --radius-btn: 0.5rem;
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 24px rgb(0 0 0 / 0.45);
+
+  color-scheme: dark;
+}
+
 /* ============================================================
    BASE
    ============================================================ */

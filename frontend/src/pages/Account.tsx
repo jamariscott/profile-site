@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SiteNav from "../components/SiteNav";
 import { apiJson, apiFetch } from "../lib/api";
@@ -7,6 +7,7 @@ import { useAuth, clearSession } from "../lib/auth";
 import { THEMES, type ThemeId } from "../lib/themes";
 import MusicManager from "../components/MusicManager";
 import ProfileView, { type PublicProfile, type LayoutSection } from "../components/ProfileView";
+import { compressAndResizeImage } from "../lib/upload";
 
 interface MyComment {
   id: number;
@@ -64,6 +65,12 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "settings", label: "Settings" },
 ];
 
+// Tabs that only make sense for certain professions. Undefined here means
+// "always shown" (Links/Projects/Preview/Settings apply to every profession).
+const TAB_PROFESSION: Partial<Record<Tab, ThemeId>> = {
+  music: "music",
+};
+
 export default function Account() {
   const session = useAuth();
   const navigate = useNavigate();
@@ -75,6 +82,26 @@ export default function Account() {
   const [headline, setHeadline] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarError("");
+    setAvatarUploading(true);
+    try {
+      const base64 = await compressAndResizeImage(file, 200, 200);
+      setAvatarUrl(base64);
+      setProfNotice("Avatar uploaded successfully. Remember to Save Profile.");
+    } catch (err: any) {
+      setAvatarError(err?.message || "Failed to process image.");
+    } finally {
+      setAvatarUploading(false);
+      if (e.target) e.target.value = "";
+    }
+  };
   const [isPublic, setIsPublic] = useState(true);
   const [profileTheme, setProfileTheme] = useState<ThemeId | "">("");
   const [genres, setGenres] = useState("");
@@ -173,8 +200,8 @@ export default function Account() {
     setProfNotice("Sections arranged for this theme — Save to publish.");
   };
 
-  const saveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const saveProfile = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setProfNotice("");
     setProfSaving(true);
     try {
@@ -330,7 +357,10 @@ export default function Account() {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 border-b border-line mb-8">
-          {TABS.map((t) => (
+          {TABS.filter((t) => {
+            const requires = TAB_PROFESSION[t.id];
+            return !requires || profileTheme === requires;
+          }).map((t) => (
             <button
               key={t.id}
               onClick={() => { setTab(t.id); if (t.id === "preview") refreshPreview(); }}
@@ -356,26 +386,66 @@ export default function Account() {
                 <textarea placeholder="A few sentences about you…" value={bio} onChange={(e) => setBio(e.target.value)} rows={4} className={field} />
               </div>
               <div>
-                <label className="block text-sm text-muted mb-1">Avatar image URL</label>
-                <input type="url" placeholder="https://…" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className={field} />
+                <label className="block text-sm text-muted mb-1">Avatar Image</label>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Avatar Preview"
+                      className="w-16 h-16 rounded-full object-cover border border-line shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-surface-2 border border-line flex items-center justify-center text-subtle text-xs shrink-0">
+                      No Image
+                    </div>
+                  )}
+                  <div className="flex-1 w-full space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Or paste an image URL (https://…)"
+                        value={avatarUrl}
+                        onChange={(e) => setAvatarUrl(e.target.value)}
+                        className={field}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={avatarUploading}
+                        className="bg-surface-2 border border-line text-text hover:bg-surface-3 hover:border-line-strong px-4 py-2.5 rounded-btn font-medium text-sm whitespace-nowrap transition-all"
+                      >
+                        {avatarUploading ? "Processing…" : "Upload File"}
+                      </button>
+                    </div>
+                    <input
+                      type="file"
+                      ref={avatarInputRef}
+                      onChange={handleAvatarFileChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    {avatarError && <p className="text-danger text-xs">{avatarError}</p>}
+                  </div>
+                </div>
               </div>
+              {/* Profession picker — selecting a profession arranges its sections.
+                  General brand skins (Classic/HuffPost/Twilight) aren't tied to any
+                  profession, so they're admin-only here — everyone else just picks
+                  a profession (or General, which follows the site's own look). */}
               <div>
-                <label className="block text-sm text-muted mb-1">Genres <span className="text-subtle font-normal">(comma-separated, shown on music profiles)</span></label>
-                <input type="text" placeholder="e.g. Hip-hop, R&B, Soul" value={genres} onChange={(e) => setGenres(e.target.value)} className={field} />
-              </div>
-
-              {/* Theme picker — selecting a theme arranges its sections */}
-              <div>
-                <label className="block text-sm text-muted mb-2">Theme <span className="text-subtle font-normal">(also arranges your sections)</span></label>
+                <label className="block text-sm text-muted mb-2">Profession <span className="text-subtle font-normal">(also arranges your sections)</span></label>
                 <div className="flex flex-wrap gap-2">
-                  {THEMES.map((t) => (
+                  <button type="button" onClick={() => selectTheme("")} className={`px-3 py-1.5 rounded-btn border text-sm ${profileTheme === "" ? "border-accent bg-surface-2 text-text" : "border-line text-muted hover:bg-surface-2"}`}>
+                    General
+                  </button>
+                  {THEMES.filter((t) => t.kind === "profession" || user.role === "admin").map((t) => (
                     <button type="button" key={t.id} onClick={() => selectTheme(t.id)} className={`px-3 py-1.5 rounded-btn border text-sm ${profileTheme === t.id ? "border-accent bg-surface-2 text-text" : "border-line text-muted hover:bg-surface-2"}`}>
                       {t.label}
                     </button>
                   ))}
-                  <button type="button" onClick={() => selectTheme("")} className={`px-3 py-1.5 rounded-btn border text-sm ${profileTheme === "" ? "border-accent bg-surface-2 text-text" : "border-line text-muted hover:bg-surface-2"}`}>
-                    Site default
-                  </button>
                 </div>
               </div>
 
@@ -416,8 +486,18 @@ export default function Account() {
         {tab === "music" && (
           <div className={card}>
             <p className="text-muted text-sm mb-6">
-              Add your tracks, releases and shows. Tip: pick the <strong className="text-text">Music</strong> theme on the Profile tab to arrange these sections automatically.
+              Add your tracks, releases and shows. Sections are arranged automatically for the <strong className="text-text">Music</strong> profession.
             </p>
+            <div className="mb-6">
+              <label className="block text-sm text-muted mb-1">Genres <span className="text-subtle font-normal">(comma-separated)</span></label>
+              <div className="flex gap-2">
+                <input type="text" placeholder="e.g. Hip-hop, R&B, Soul" value={genres} onChange={(e) => setGenres(e.target.value)} className={`${field} flex-1`} />
+                <button type="button" onClick={() => saveProfile()} disabled={profSaving} className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium whitespace-nowrap disabled:opacity-50">
+                  {profSaving ? "Saving…" : "Save"}
+                </button>
+              </div>
+              {profNotice && <p className="text-success text-sm mt-2">{profNotice}</p>}
+            </div>
             <MusicManager />
           </div>
         )}

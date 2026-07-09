@@ -55,17 +55,19 @@ export default function DailyWireNav() {
               Account
             </Link>
           ) : (
-            <Link to="/login" style={{ color: "inherit" }}>
-              Log In
-            </Link>
+            <>
+              <Link to="/login" style={{ color: "inherit" }}>
+                Log In
+              </Link>
+              <Link
+                to="/register"
+                style={{ background: RED }}
+                className="text-white px-5 py-2 rounded-full font-bold text-xs whitespace-nowrap hover:opacity-90 transition-opacity"
+              >
+                SIGN UP
+              </Link>
+            </>
           )}
-          <Link
-            to="/register"
-            style={{ background: RED }}
-            className="text-white px-5 py-2 rounded-full font-bold text-xs whitespace-nowrap hover:opacity-90 transition-opacity"
-          >
-            SIGN UP
-          </Link>
         </div>
       </div>
     </header>
