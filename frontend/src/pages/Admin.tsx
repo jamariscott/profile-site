@@ -39,11 +39,11 @@ export default function Admin() {
 
   type AdminTab = 'comments' | 'users' | 'articles';
   const ADMIN_TABS: { id: AdminTab; label: string }[] = [
+    { id: 'articles', label: 'Articles' },
     { id: 'comments', label: 'Comments' },
     { id: 'users', label: 'Users' },
-    { id: 'articles', label: 'Articles' },
   ];
-  const [tab, setTab] = useState<AdminTab>('comments');
+  const [tab, setTab] = useState<AdminTab>('articles');
 
   const [posts, setPosts] = useState<WritingPost[]>([]);
   const [comments, setComments] = useState<PendingComment[]>([]);
