@@ -273,11 +273,13 @@ export default function Account() {
   const addLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setLError("");
-    if (!lLabel.trim() || !lHref.trim()) { setLError("Label and URL are required."); return; }
+    const label = lLabel.trim();
+    const href = lHref.trim();
+    if (!label || !href) { setLError("Label and URL are required."); return; }
     try {
       const res = await apiFetch("/api/me/links", {
         method: "POST",
-        body: JSON.stringify({ label: lLabel, href: lHref }),
+        body: JSON.stringify({ label, href }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || "Could not add link");
@@ -520,7 +522,7 @@ export default function Account() {
             )}
             <form onSubmit={addLink} className="flex flex-col sm:flex-row gap-2">
               <input type="text" placeholder={lFetchingLabel ? "Fetching title…" : "Label (e.g. Instagram)"} value={lLabel} onChange={(e) => setLLabel(e.target.value)} className="border border-line bg-surface text-text p-3 rounded-btn sm:w-44" />
-              <input type="url" placeholder="https://…" value={lHref} onChange={(e) => setLHref(e.target.value)} onBlur={handleLinkHrefBlur} className="border border-line bg-surface text-text p-3 rounded-btn flex-1" />
+              <input type="text" placeholder="https://…" value={lHref} onChange={(e) => setLHref(e.target.value)} onBlur={handleLinkHrefBlur} className="border border-line bg-surface text-text p-3 rounded-btn flex-1" />
               <button type="submit" className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium whitespace-nowrap">Add link</button>
             </form>
             {lError && <p className="text-danger text-sm mt-2">{lError}</p>}

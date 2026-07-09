@@ -12,6 +12,7 @@ import {
   TikTokIcon,
   FacebookIcon,
   GlobeIcon,
+  UntitledIcon,
 } from "./icons";
 
 function getLinkIcon(href: string) {
@@ -26,6 +27,7 @@ function getLinkIcon(href: string) {
   if (/music\.apple\.com/.test(url)) return <AppleMusicIcon size={16} className="text-[#FA243C] shrink-0" />;
   if (/tiktok\.com/.test(url)) return <TikTokIcon size={16} className="text-text shrink-0" />;
   if (/facebook\.com/.test(url)) return <FacebookIcon size={16} className="text-[#1877F2] shrink-0" />;
+  if (/untitled\.stream/.test(url)) return <UntitledIcon size={16} className="text-text shrink-0" />;
   return <GlobeIcon size={16} className="text-subtle shrink-0" />;
 }
 

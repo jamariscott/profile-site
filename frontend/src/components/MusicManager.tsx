@@ -69,9 +69,10 @@ export default function MusicManager() {
   const addTrack = async (e: React.FormEvent) => {
     e.preventDefault();
     setTErr("");
-    if (!tUrl.trim()) { setTErr("Paste a streaming link."); return; }
+    const url = tUrl.trim();
+    if (!url) { setTErr("Paste a streaming link."); return; }
     try {
-      const res = await apiFetch("/api/me/tracks", { method: "POST", body: JSON.stringify({ url: tUrl, title: tTitle }) });
+      const res = await apiFetch("/api/me/tracks", { method: "POST", body: JSON.stringify({ url, title: tTitle.trim() }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || "Could not add track");
       setTUrl(""); setTTitle("");
@@ -89,7 +90,7 @@ export default function MusicManager() {
     if (!rTitle.trim()) return;
     const res = await apiFetch("/api/me/releases", {
       method: "POST",
-      body: JSON.stringify({ title: rTitle, year: rYear, cover_url: rCover, link: rLink }),
+      body: JSON.stringify({ title: rTitle.trim(), year: rYear.trim(), cover_url: rCover, link: rLink.trim() }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
@@ -108,7 +109,7 @@ export default function MusicManager() {
     if (!sVenue.trim() && !sDate.trim()) return;
     const res = await apiFetch("/api/me/shows", {
       method: "POST",
-      body: JSON.stringify({ date: sDate, venue: sVenue, city: sCity, ticket_url: sTicket }),
+      body: JSON.stringify({ date: sDate.trim(), venue: sVenue.trim(), city: sCity.trim(), ticket_url: sTicket.trim() }),
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
@@ -156,7 +157,7 @@ export default function MusicManager() {
           </>
         )}
         <form onSubmit={addTrack} className="space-y-2">
-          <input type="url" placeholder="Paste Spotify / SoundCloud / YouTube / Apple Music link" value={tUrl} onChange={(e) => setTUrl(e.target.value)} onBlur={handleTrackUrlBlur} className={`${inputClass} w-full`} />
+          <input type="text" placeholder="Paste Spotify / SoundCloud / YouTube / Apple Music / [untitled] link" value={tUrl} onChange={(e) => setTUrl(e.target.value)} onBlur={handleTrackUrlBlur} className={`${inputClass} w-full`} />
           <div className="flex gap-2">
             <input type="text" placeholder={tFetchingTitle ? "Fetching title…" : "Title (optional)"} value={tTitle} onChange={(e) => setTTitle(e.target.value)} className={`${inputClass} flex-1`} />
             <button type="submit" className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium whitespace-nowrap">Add track</button>
@@ -231,7 +232,7 @@ export default function MusicManager() {
             </div>
           </div>
           <div className="flex gap-2">
-            <input type="url" placeholder="Link (optional)" value={rLink} onChange={(e) => setRLink(e.target.value)} className={`${inputClass} flex-1`} />
+            <input type="text" placeholder="Link (optional)" value={rLink} onChange={(e) => setRLink(e.target.value)} className={`${inputClass} flex-1`} />
             <button type="submit" className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium whitespace-nowrap">Add release</button>
           </div>
         </form>
@@ -260,7 +261,7 @@ export default function MusicManager() {
           </div>
           <div className="flex gap-2">
             <input type="text" placeholder="City" value={sCity} onChange={(e) => setSCity(e.target.value)} className={`${inputClass} flex-1`} />
-            <input type="url" placeholder="Ticket link (optional)" value={sTicket} onChange={(e) => setSTicket(e.target.value)} className={`${inputClass} flex-1`} />
+            <input type="text" placeholder="Ticket link (optional)" value={sTicket} onChange={(e) => setSTicket(e.target.value)} className={`${inputClass} flex-1`} />
           </div>
           <button type="submit" className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium">Add show</button>
         </form>

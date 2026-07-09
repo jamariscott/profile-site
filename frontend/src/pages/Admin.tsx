@@ -434,7 +434,7 @@ export default function Admin() {
 
           <label className="block text-sm font-medium text-muted mb-1">Sponsor Image <span className="text-subtle font-normal">(adds "Sponsored Content" badge + hero image + footer attribution)</span></label>
           <div className="flex gap-2 mb-2">
-            <input type="url" placeholder="Paste image URL..." value={newPost.sponsorLogo.startsWith('data:') ? '' : newPost.sponsorLogo} onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value})} className="border border-line bg-surface text-text p-3 flex-1 rounded-btn" />
+            <input type="text" placeholder="Paste image URL..." value={newPost.sponsorLogo.startsWith('data:') ? '' : newPost.sponsorLogo} onChange={e => setNewPost({...newPost, sponsorLogo: e.target.value.trim()})} className="border border-line bg-surface text-text p-3 flex-1 rounded-btn" />
             <button type="button" onClick={() => coverImageInputRef.current?.click()} className="px-4 py-3 border border-line rounded-btn text-sm text-muted hover:bg-surface-2 whitespace-nowrap">
               📁 Upload from device
             </button>
