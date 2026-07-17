@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
+import ShareButton from "./ShareButton";
 import {
   GitHubIcon,
   SpotifyIcon,
@@ -91,28 +92,6 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
         </section>
       );
     }
-    if (type === "links") {
-      if (profile.links.length === 0) return null;
-      return (
-        <section key="links" className="mb-12">
-          <h2 className="text-sm font-medium tracking-widest uppercase text-muted mb-4">Links</h2>
-          <div className="flex flex-wrap gap-3">
-            {profile.links.map((l) => (
-              <a
-                key={l.id}
-                href={l.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2.5 px-5 py-2.5 bg-surface border border-line rounded-btn hover:border-line-strong hover:bg-surface-2 transition-all text-text shadow-sm hover:shadow-md"
-              >
-                {getLinkIcon(l.href)}
-                <span>{l.label}</span>
-              </a>
-            ))}
-          </div>
-        </section>
-      );
-    }
     if (type === "tracks") {
       if (profile.tracks.length === 0) return null;
       const videoTracks = profile.tracks.filter((t) => resolveEmbed(t.url)?.aspect);
@@ -198,10 +177,9 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
     return null;
   };
 
-  const allEmpty = sections.every((s) => {
+  const allEmpty = profile.links.length === 0 && sections.every((s) => {
     if (s.type === "about") return !profile.bio;
     if (s.type === "projects") return profile.projects.length === 0;
-    if (s.type === "links") return profile.links.length === 0;
     if (s.type === "tracks") return profile.tracks.length === 0;
     if (s.type === "releases") return profile.releases.length === 0;
     if (s.type === "shows") return profile.shows.length === 0;
@@ -210,28 +188,48 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
 
   return (
     <>
-      <header className="flex items-center gap-5 mb-12">
-        {profile.avatar_url && (
-          <img
-            src={profile.avatar_url}
-            alt={profile.display_name}
-            className="w-20 h-20 rounded-full object-cover border border-line"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
-        )}
-        <div>
-          <h1 className="text-4xl font-bold text-text">{profile.display_name}</h1>
-          {profile.headline && <p className="text-lg text-muted mt-1">{profile.headline}</p>}
-          <p className="text-subtle text-sm mt-1">@{profile.username}</p>
-          {profile.genres && profile.genres.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {profile.genres.map((g) => (
-                <span key={g} className="text-xs px-2.5 py-1 rounded-full bg-surface-2 text-muted">{g}</span>
-              ))}
-            </div>
+      <header className="flex items-start justify-between gap-5 mb-8">
+        <div className="flex items-center gap-5">
+          {profile.avatar_url && (
+            <img
+              src={profile.avatar_url}
+              alt={profile.display_name}
+              className="w-20 h-20 rounded-full object-cover border border-line"
+              onError={(e) => (e.currentTarget.style.display = "none")}
+            />
           )}
+          <div>
+            <h1 className="text-4xl font-bold text-text">{profile.display_name}</h1>
+            {profile.headline && <p className="text-lg text-muted mt-1">{profile.headline}</p>}
+            <p className="text-subtle text-sm mt-1">@{profile.username}</p>
+            {profile.genres && profile.genres.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {profile.genres.map((g) => (
+                  <span key={g} className="text-xs px-2.5 py-1 rounded-full bg-surface-2 text-muted">{g}</span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+        <ShareButton username={profile.username} displayName={profile.display_name} />
       </header>
+
+      {profile.links.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-12">
+          {profile.links.map((l) => (
+            <a
+              key={l.id}
+              href={l.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 px-5 py-2.5 bg-surface border border-line rounded-btn hover:border-line-strong hover:bg-surface-2 transition-all text-text shadow-sm hover:shadow-md"
+            >
+              {getLinkIcon(l.href)}
+              <span>{l.label}</span>
+            </a>
+          ))}
+        </div>
+      )}
 
       {!profile.is_public && (
         <p className="text-xs text-subtle mb-6">Private — only you can see this. Make it public from your account.</p>

@@ -211,3 +211,43 @@ export const UntitledIcon: React.FC<IconProps> = ({ className = "", size = 20, .
     <path d="M16 4h3v16h-3" />
   </svg>
 );
+
+export const ShareIcon: React.FC<IconProps> = ({ className = "", size = 20, ...props }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`lucide lucide-share ${className}`}
+    {...props}
+  >
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <path d="M8.59 13.51l6.83 3.98" />
+    <path d="M15.41 6.51l-6.82 3.98" />
+  </svg>
+);
+
+export const CheckIcon: React.FC<IconProps> = ({ className = "", size = 20, ...props }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`lucide lucide-check ${className}`}
+    {...props}
+  >
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);

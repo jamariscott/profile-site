@@ -34,22 +34,23 @@ interface MyLink {
 const SECTION_LABELS: Record<string, string> = {
   about: "About",
   projects: "Projects",
-  links: "Links",
   tracks: "Tracks",
   releases: "Releases",
   shows: "Shows",
 };
 
-const ALL_SECTION_TYPES = ["about", "projects", "links", "tracks", "releases", "shows"];
+const ALL_SECTION_TYPES = ["about", "projects", "tracks", "releases", "shows"];
 
 // Each theme implies a section preset (a profession bundle). Music shows the
 // music modules; everything else shows the general set. Data is never deleted —
 // non-preset sections are appended hidden so they stay toggleable.
+// Links aren't part of this reorderable set — they're a fixed block that
+// always renders right under the profile header (see ProfileView.tsx).
 function presetFor(theme: string): LayoutSection[] {
   const order =
     theme === "music"
-      ? ["about", "tracks", "releases", "shows", "links"]
-      : ["about", "projects", "links"];
+      ? ["about", "tracks", "releases", "shows"]
+      : ["about", "projects"];
   const visible = order.map((type) => ({ type, visible: true }));
   const hidden = ALL_SECTION_TYPES.filter((t) => !order.includes(t)).map((type) => ({ type, visible: false }));
   return [...visible, ...hidden];
@@ -154,7 +155,9 @@ export default function Account() {
         setIsPublic(p.is_public !== false);
         setProfileTheme(p.theme || "");
         setGenres(Array.isArray(p.genres) ? p.genres.join(", ") : "");
-        const base: LayoutSection[] = Array.isArray(p.layout) ? p.layout : [];
+        // Drop any legacy "links" entry from previously-saved layouts — links
+        // are no longer part of the reorderable set (see presetFor above).
+        const base: LayoutSection[] = (Array.isArray(p.layout) ? p.layout : []).filter((s: LayoutSection) => s.type !== "links");
         const present = new Set(base.map((s) => s.type));
         const merged = [
           ...base,
