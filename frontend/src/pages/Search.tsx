@@ -1,49 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import SiteNav from "../components/SiteNav";
-import { apiJson } from "../lib/api";
-
-interface ProfileResult { username: string; display_name: string; headline: string | null; avatar_url: string | null; }
-interface ArticleResult { slug: string; title: string; summary: string | null; date: string | null; }
-interface VideoResult { id: number; title: string; youtube_id: string; }
-
-interface SearchResults {
-  profiles: ProfileResult[];
-  articles: ArticleResult[];
-  videos: VideoResult[];
-}
-
-const EMPTY: SearchResults = { profiles: [], articles: [], videos: [] };
+import SearchBar from "../components/SearchBar";
+import { fetchSearch, EMPTY_SEARCH_RESULTS, type SearchResults } from "../lib/search";
 
 export default function Search() {
   const [params, setParams] = useSearchParams();
-  const initialQ = params.get("q") || "";
-  const [input, setInput] = useState(initialQ);
-  const [results, setResults] = useState<SearchResults>(EMPTY);
+  const [results, setResults] = useState<SearchResults>(EMPTY_SEARCH_RESULTS);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
+  const handleQueryChange = (value: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      setParams(input.trim() ? { q: input.trim() } : {}, { replace: true });
+      setParams(value.trim() ? { q: value.trim() } : {}, { replace: true });
     }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input]);
+  };
+
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
 
   useEffect(() => {
     const q = params.get("q") || "";
     if (q.trim().length < 2) {
-      setResults(EMPTY);
+      setResults(EMPTY_SEARCH_RESULTS);
       return;
     }
     setLoading(true);
-    apiJson<SearchResults>(`/api/search?q=${encodeURIComponent(q.trim())}`)
+    fetchSearch(q)
       .then(setResults)
-      .catch(() => setResults(EMPTY))
       .finally(() => setLoading(false));
   }, [params]);
 
@@ -58,14 +44,9 @@ export default function Search() {
       <SiteNav />
       <div className="max-w-3xl mx-auto px-6 py-12">
         <h1 className="text-3xl font-bold text-text mb-6">Search</h1>
-        <input
-          type="text"
-          autoFocus
-          placeholder="Search users, articles, videos…"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="border border-line bg-surface text-text p-4 w-full rounded-btn text-lg mb-10"
-        />
+        <div className="mb-10">
+          <SearchBar placeholder="Search users, articles, videos…" onSearch={handleQueryChange} autoFocus />
+        </div>
 
         {!hasQuery && <p className="text-muted">Start typing to search the site.</p>}
 
