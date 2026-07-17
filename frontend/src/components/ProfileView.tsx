@@ -118,36 +118,50 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
     }
     if (type === "releases") {
       if (profile.releases.length === 0) return null;
+      // Releases linking to a platform TrackEmbed knows how to embed (Spotify/Apple
+      // Music album, SoundCloud set, etc.) play inline; everything else stays a
+      // cover-art tile that just links out.
+      const playable = profile.releases.filter((r) => r.link && resolveEmbed(r.link));
+      const tiles = profile.releases.filter((r) => !(r.link && resolveEmbed(r.link)));
       return (
         <section key="releases" className="mb-12">
           <h2 className="text-sm font-medium tracking-widest uppercase text-muted mb-4">Releases</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {profile.releases.map((r) => {
-              const inner = (
-                <>
-                  <div className="aspect-square rounded-card overflow-hidden bg-surface-2 mb-2">
-                    {r.cover_url && (
-                      <img
-                        src={r.cover_url}
-                        alt={r.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => (e.currentTarget.style.display = "none")}
-                      />
-                    )}
-                  </div>
-                  <h3 className="text-text text-sm font-medium leading-tight">{r.title}</h3>
-                  {r.year && <span className="text-subtle text-xs">{r.year}</span>}
-                </>
-              );
-              return r.link ? (
-                <a key={r.id} href={r.link} target="_blank" rel="noopener noreferrer" className="block group">
-                  {inner}
-                </a>
-              ) : (
-                <div key={r.id}>{inner}</div>
-              );
-            })}
-          </div>
+          {playable.length > 0 && (
+            <div className="space-y-4 mb-4">
+              {playable.map((r) => (
+                <TrackEmbed key={r.id} url={r.link!} title={r.year ? `${r.title} (${r.year})` : r.title} />
+              ))}
+            </div>
+          )}
+          {tiles.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+              {tiles.map((r) => {
+                const inner = (
+                  <>
+                    <div className="aspect-square rounded-card overflow-hidden bg-surface-2 mb-2">
+                      {r.cover_url && (
+                        <img
+                          src={r.cover_url}
+                          alt={r.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => (e.currentTarget.style.display = "none")}
+                        />
+                      )}
+                    </div>
+                    <h3 className="text-text text-sm font-medium leading-tight">{r.title}</h3>
+                    {r.year && <span className="text-subtle text-xs">{r.year}</span>}
+                  </>
+                );
+                return r.link ? (
+                  <a key={r.id} href={r.link} target="_blank" rel="noopener noreferrer" className="block group">
+                    {inner}
+                  </a>
+                ) : (
+                  <div key={r.id}>{inner}</div>
+                );
+              })}
+            </div>
+          )}
         </section>
       );
     }

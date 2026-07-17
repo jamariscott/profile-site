@@ -169,6 +169,9 @@ export default function MusicManager() {
       {/* Releases */}
       <div>
         <h3 className="text-text font-semibold mb-3">Releases</h3>
+        <p className="text-muted text-xs mb-3">
+          A Spotify, Apple Music, or SoundCloud album/playlist link plays inline on your profile — any other link just opens out.
+        </p>
         {releases.length > 0 && (
           <div className="space-y-2 mb-4">
             {releases.map((r) => (
