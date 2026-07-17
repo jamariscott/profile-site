@@ -1,4 +1,5 @@
 import { NavLink, Link } from "react-router-dom";
+import { Search } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import DarkModeToggle from "./DarkModeToggle";
 
@@ -35,8 +36,8 @@ export default function PageNav() {
             Log in
           </NavLink>
         )}
-        <Link to="/search" aria-label="Search" className="ml-auto text-muted hover:text-text transition-colors">
-          &#128269;
+        <Link to="/search" aria-label="Search" className="ml-auto inline-flex items-center text-muted hover:text-text transition-colors">
+          <Search size={18} strokeWidth={2} />
         </Link>
         <DarkModeToggle className="w-7 h-7 rounded-full flex items-center justify-center text-muted hover:text-text hover:bg-surface-2 transition-colors" />
       </div>

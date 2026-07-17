@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
+import { Search } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useDarkMode } from "../theme/DarkModeProvider";
 import DarkModeToggle from "./DarkModeToggle";
@@ -35,8 +36,8 @@ export default function HuffPostNav() {
             <span className="text-white text-lg opacity-80 hidden sm:inline" aria-hidden>
               &#128276;
             </span>
-            <Link to="/search" aria-label="Search" className="text-white text-lg opacity-80 hover:opacity-100 hidden sm:inline">
-              &#128269;
+            <Link to="/search" aria-label="Search" className="text-white opacity-80 hover:opacity-100 hidden sm:inline-flex items-center">
+              <Search size={18} strokeWidth={2} />
             </Link>
           </div>
           <div className="justify-self-center">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
+import { Search } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useDarkMode } from "../theme/DarkModeProvider";
 import DarkModeToggle from "./DarkModeToggle";
@@ -59,8 +60,8 @@ export default function DailyWireNav() {
             </Link>
           </div>
           <div className="flex items-center gap-3 sm:gap-5 text-sm justify-self-end" style={{ color: text }}>
-            <Link to="/search" aria-label="Search" className="opacity-80 hover:opacity-100 hidden sm:inline" style={{ color: "inherit" }}>
-              &#128269;
+            <Link to="/search" aria-label="Search" className="opacity-80 hover:opacity-100 hidden sm:inline-flex items-center" style={{ color: "inherit" }}>
+              <Search size={18} strokeWidth={2} />
             </Link>
             <DarkModeToggle className="w-7 h-7 rounded-full flex items-center justify-center hover:opacity-70 transition-opacity shrink-0" />
             {session ? (
