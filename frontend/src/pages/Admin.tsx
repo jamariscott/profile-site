@@ -4,6 +4,7 @@ import RichTextEditor from '../components/RichTextEditor';
 import SiteNav from '../components/SiteNav';
 import { apiFetch, apiJson } from '../lib/api';
 import { useAuth, setSession, clearSession, type AuthSession } from '../lib/auth';
+import { useToast } from '../components/ToastProvider';
 
 interface WritingPost {
   slug: string;
@@ -36,6 +37,7 @@ interface AdminUser {
 export default function Admin() {
   const session = useAuth();
   const isAdmin = session?.user.role === 'admin';
+  const toast = useToast();
 
   type AdminTab = 'comments' | 'users' | 'articles';
   const ADMIN_TABS: { id: AdminTab; label: string }[] = [
@@ -142,7 +144,7 @@ export default function Admin() {
   // === ARTICLES ===
   const createPost = async () => {
     if (!newPost.title || !newPost.content) {
-      alert('Title and content are required');
+      toast.error('Title and content are required');
       return;
     }
     try {
@@ -154,17 +156,17 @@ export default function Admin() {
       if (!res.ok) throw new Error(data.detail || 'Failed to create post');
 
       if (data.x_error) {
-        alert(`Article created, but failed to post to X:\n${data.x_error}`);
+        toast.error(`Article created, but failed to post to X:\n${data.x_error}`);
       } else if (data.x) {
-        alert(`Article created and posted to X!\n${data.x.tweet_url}`);
+        toast.success(`Article created and posted to X!\n${data.x.tweet_url}`);
       } else {
-        alert('Article created successfully!');
+        toast.success('Article created successfully!');
       }
 
       setNewPost({ title: '', summary: '', content: '', postToX: false, sponsorLogo: '' });
       loadPosts();
     } catch (err: any) {
-      alert(err.message || 'Failed to create post');
+      toast.error(err.message || 'Failed to create post');
     }
   };
 
@@ -173,10 +175,10 @@ export default function Admin() {
     try {
       const res = await apiFetch(`/api/admin/publish-to-x/${slug}`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to publish');
-      alert('Marked as posted to X');
+      toast.success('Marked as posted to X');
       loadPosts();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -185,13 +187,13 @@ export default function Admin() {
     try {
       const res = await apiFetch(`/api/admin/writing/${slug}`, { method: 'DELETE' });
       if (res.ok) {
-        alert('Post deleted successfully');
+        toast.success('Post deleted successfully');
         loadPosts();
       } else {
-        alert('Failed to delete post');
+        toast.error('Failed to delete post');
       }
     } catch {
-      alert('Error deleting post');
+      toast.error('Error deleting post');
     }
   };
 
@@ -202,7 +204,7 @@ export default function Admin() {
       if (!res.ok) throw new Error('Failed to approve');
       loadComments();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -213,7 +215,7 @@ export default function Admin() {
       if (!res.ok) throw new Error('Failed to delete');
       loadComments();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -229,7 +231,7 @@ export default function Admin() {
       if (!res.ok) throw new Error('Failed to update role');
       loadUsers();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -242,9 +244,9 @@ export default function Admin() {
         body: JSON.stringify({ new_password: newPassword }),
       });
       if (!res.ok) throw new Error('Failed to reset password');
-      alert(`Password reset for ${u.username}.`);
+      toast.success(`Password reset for ${u.username}.`);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

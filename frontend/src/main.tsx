@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { LayoutProvider } from "./theme/LayoutProvider";
 import { DarkModeProvider } from "./theme/DarkModeProvider";
+import { ToastProvider } from "./components/ToastProvider";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -11,7 +12,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <LayoutProvider>
         <DarkModeProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </DarkModeProvider>
       </LayoutProvider>
     </BrowserRouter>
