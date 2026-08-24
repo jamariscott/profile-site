@@ -1,5 +1,6 @@
 import Admin from "./pages/Admin";
 import { Routes, Route } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 
 import Home from "./pages/Home";
 import Writing from "./pages/Writing";
@@ -10,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Account from "./pages/Account";
 import Profile from "./pages/Profile";
+import NotFound from "./pages/NotFound";
 import AdminLayoutSwitcher from "./components/AdminLayoutSwitcher";
 
 export default function App() {
@@ -26,8 +28,10 @@ export default function App() {
         <Route path="/account" element={<Account />} />
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <AdminLayoutSwitcher />
+      <Analytics />
     </>
   );
 }
