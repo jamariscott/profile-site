@@ -17,7 +17,7 @@
         font-family="Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="#ffffff">T</text>
 
   <!-- wordmark -->
-  <text x="90" y="330" font-family="Helvetica, Arial, sans-serif" font-size="96" font-weight="800" fill="#ffffff">TimezofToday</text>
+  <text x="90" y="330" font-family="Helvetica, Arial, sans-serif" font-size="88" font-weight="800" fill="#ffffff">Timez of Today</text>
 
   <!-- tagline -->
   <text x="92" y="410" font-family="Helvetica, Arial, sans-serif" font-size="46" font-weight="400" fill="#a1a1aa">Show the world what you do.</text>
