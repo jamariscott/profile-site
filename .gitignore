@@ -35,3 +35,10 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# ---- Local working docs (keep out of git) ----
+CLAUDE.md
+DESIGN.md
+BACKLOG.md
+SAMPLE_ARTICLES.md
+PLATFORM_ROADMAP.md
