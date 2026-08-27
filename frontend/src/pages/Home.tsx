@@ -184,6 +184,7 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
         ) : (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
+              <Reveal>
               <Link to={`/writing/${hero.slug}`} className="block group">
                 {heroThumb && (
                   <div className="w-full h-80 md:h-[28rem] rounded-card overflow-hidden mb-5">
@@ -202,9 +203,10 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
                 </h2>
                 <p className="text-muted text-lg line-clamp-3">{hero.summary}</p>
               </Link>
+              </Reveal>
 
               {sidebar.length > 0 && (
-                <div className="space-y-5">
+                <Reveal className="space-y-5" delay={0.08}>
                   <h2 className="text-sm font-semibold tracking-widest uppercase text-muted border-b border-line pb-2">
                     Trending
                   </h2>
@@ -216,7 +218,7 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
                       <span className="text-xs text-muted block mt-1">{post.date}</span>
                     </Link>
                   ))}
-                </div>
+                </Reveal>
               )}
             </div>
 
@@ -224,10 +226,11 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
               <>
                 <hr className="border-line my-12" />
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  {grid.map((post) => {
+                  {grid.map((post, i) => {
                     const thumb = extractThumbnail(post);
                     return (
-                      <Link key={post.slug} to={`/writing/${post.slug}`} className="block group">
+                      <Reveal key={post.slug} delay={i * 0.05}>
+                      <Link to={`/writing/${post.slug}`} className="block group">
                         {thumb && (
                           <div className="w-full h-32 rounded-xl overflow-hidden mb-2">
                             <img
@@ -241,6 +244,7 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
                           {post.title}
                         </h3>
                       </Link>
+                      </Reveal>
                     );
                   })}
                 </div>
@@ -278,6 +282,7 @@ function DailyWireHome({ session, hero, rest }: VariantProps) {
           <p className="text-muted">No articles yet.</p>
         ) : (
           <div className="space-y-10">
+            <Reveal>
             <Link to={`/writing/${hero.slug}`} className="block group border border-line rounded-card p-6 hover:bg-surface-2 transition-colors">
               <div className="flex items-center gap-3 mb-4">
                 <span className="h-9 w-9 rounded-full bg-surface-2 border border-line shrink-0" aria-hidden />
@@ -300,14 +305,15 @@ function DailyWireHome({ session, hero, rest }: VariantProps) {
               </h2>
               <p className="text-muted line-clamp-2">{hero.summary}</p>
             </Link>
+            </Reveal>
 
             {rest.length > 0 && (
               <div className="space-y-6">
-                {rest.map((post) => {
+                {rest.map((post, i) => {
                   const thumb = extractThumbnail(post);
                   return (
+                    <Reveal key={post.slug} delay={i * 0.04}>
                     <Link
-                      key={post.slug}
                       to={`/writing/${post.slug}`}
                       className="flex items-start gap-4 group border-b border-line pb-6"
                     >
@@ -329,6 +335,7 @@ function DailyWireHome({ session, hero, rest }: VariantProps) {
                         </div>
                       )}
                     </Link>
+                    </Reveal>
                   );
                 })}
               </div>
