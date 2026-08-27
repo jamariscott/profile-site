@@ -33,9 +33,6 @@ export default function HuffPostNav() {
             >
               &#9776;
             </button>
-            <span className="text-white text-lg opacity-80 hidden sm:inline" aria-hidden>
-              &#128276;
-            </span>
             <Link to="/search" aria-label="Search" className="text-white opacity-80 hover:opacity-100 hidden sm:inline-flex items-center">
               <Search size={18} strokeWidth={2} />
             </Link>
@@ -80,6 +77,9 @@ export default function HuffPostNav() {
             <NavLink to="/videos" className={({ isActive }) => navLinkClass(isActive)}>
               Videos
             </NavLink>
+            <NavLink to="/discover" className={({ isActive }) => navLinkClass(isActive)}>
+              Discover
+            </NavLink>
           </div>
         </div>
       </header>
@@ -102,6 +102,9 @@ export default function HuffPostNav() {
                 </Link>
                 <Link to="/videos" onClick={() => setOpen(false)} className="block py-1 opacity-90">
                   Videos
+                </Link>
+                <Link to="/discover" onClick={() => setOpen(false)} className="block py-1 opacity-90">
+                  Discover
                 </Link>
               </div>
               <div>

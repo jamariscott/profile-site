@@ -303,6 +303,29 @@ async def search(q: str = "", db: Session = Depends(get_db)):
         "videos": [{"id": v.id, "title": v.title, "youtube_id": v.youtube_id} for v in videos],
     }
 
+
+@app.get("/api/discover")
+async def discover(profession: str = "", db: Session = Depends(get_db)):
+    """Public directory: browse public profiles, optionally filtered by profession
+    (the profile's theme id). Powers the front-door discovery page."""
+    q = db.query(User).filter(User.profile_public == True)
+    prof = (profession or "").strip().lower()
+    if prof and prof in VALID_THEMES:
+        q = q.filter(func.lower(User.profile_theme) == prof)
+    users = q.order_by(User.created_at.desc()).limit(60).all()
+    return [
+        {
+            "username": u.username,
+            "display_name": display_name(u),
+            "headline": u.headline,
+            "avatar_url": u.avatar_url,
+            "theme": u.profile_theme,
+            "genres": genres_list(u),
+        }
+        for u in users
+    ]
+
+
 @app.get("/api/writing")
 async def get_writing(db: Session = Depends(get_db)):
     posts = db.query(Writing).order_by(Writing.date.desc()).all()

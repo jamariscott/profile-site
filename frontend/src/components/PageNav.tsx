@@ -27,6 +27,9 @@ export default function PageNav() {
         <NavLink to="/videos" className={({ isActive }) => navLinkClass(isActive)}>
           Videos
         </NavLink>
+        <NavLink to="/discover" className={({ isActive }) => navLinkClass(isActive)}>
+          Discover
+        </NavLink>
         {session ? (
           <NavLink to="/account" className={({ isActive }) => navLinkClass(isActive)}>
             Account

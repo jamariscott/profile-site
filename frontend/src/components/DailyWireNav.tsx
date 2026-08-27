@@ -45,6 +45,9 @@ export default function DailyWireNav() {
               <NavLink to="/videos" className={({ isActive }) => navLinkClass(isActive)} style={{ color: "inherit" }}>
                 Videos
               </NavLink>
+              <NavLink to="/discover" className={({ isActive }) => navLinkClass(isActive)} style={{ color: "inherit" }}>
+                Discover
+              </NavLink>
             </div>
           </div>
           <div className="justify-self-center flex items-center gap-2 min-w-0">
@@ -105,6 +108,9 @@ export default function DailyWireNav() {
               </NavLink>
               <NavLink to="/videos" onClick={() => setOpen(false)} className="block py-2" style={{ color: "inherit" }}>
                 Videos
+              </NavLink>
+              <NavLink to="/discover" onClick={() => setOpen(false)} className="block py-2" style={{ color: "inherit" }}>
+                Discover
               </NavLink>
               {!session && (
                 <Link to="/login" onClick={() => setOpen(false)} className="block py-2" style={{ color: "inherit" }}>
