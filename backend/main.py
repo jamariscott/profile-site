@@ -11,7 +11,7 @@ import urllib.request
 from io import BytesIO
 
 from database import SessionLocal, engine, Base, get_db
-from models import Profile, Project, Link, Video, Writing, Admin, Setting, User, Comment, Track, Release, Show
+from models import Profile, Project, Link, Video, Writing, Admin, Setting, User, Comment, Track, Release, Show, Photo, Clip, Post
 from auth import (
     hash_password,
     verify_password,
@@ -41,7 +41,13 @@ def migrate_legacy_admins(db):
 def ensure_columns():
     """Add columns introduced after a table was first created. create_all only
     creates missing TABLES, not missing COLUMNS, and Render doesn't run Alembic,
-    so we add new columns idempotently here (Postgres ADD COLUMN IF NOT EXISTS)."""
+    so we add new columns idempotently here (Postgres ADD COLUMN IF NOT EXISTS).
+
+    Only runs on Postgres (production). On a local SQLite dev database this is a
+    no-op: create_all() just made every table with all current columns, and
+    SQLite doesn't support ADD COLUMN IF NOT EXISTS anyway."""
+    if engine.dialect.name != "postgresql":
+        return
     stmts = [
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR",
@@ -101,7 +107,7 @@ def init_database():
 init_database()
 
 # ---- Per-profile theme (artists customizing their own public profile) ----
-VALID_THEMES = {"classic", "huffpost", "twilight", "music", "developer"}
+VALID_THEMES = {"classic", "huffpost", "twilight", "music", "developer", "photographer", "creator", "writer"}
 
 # ---- Site settings (homepage layout) ----
 DEFAULT_LAYOUT = "classic"
@@ -170,6 +176,23 @@ def show_dict(s: Show) -> dict:
     return {"id": s.id, "date": s.date, "venue": s.venue, "city": s.city, "ticket_url": s.ticket_url}
 
 
+def photo_dict(p: Photo) -> dict:
+    return {"id": p.id, "image_url": p.image_url, "caption": p.caption}
+
+
+def clip_dict(c: Clip) -> dict:
+    return {"id": c.id, "url": c.url, "title": c.title}
+
+
+def post_dict(p: Post) -> dict:
+    return {
+        "id": p.id,
+        "title": p.title,
+        "body": p.body,
+        "created_at": p.created_at.isoformat() if p.created_at else None,
+    }
+
+
 def genres_list(user: User) -> list:
     return [g.strip() for g in (user.genres or "").split(",") if g.strip()]
 
@@ -204,6 +227,9 @@ def profile_payload(user: User, db: Session) -> dict:
     tracks = db.query(Track).filter(Track.user_id == user.id).order_by(Track.sort.asc(), Track.id.asc()).all()
     releases = db.query(Release).filter(Release.user_id == user.id).order_by(Release.sort.asc(), Release.id.desc()).all()
     shows = db.query(Show).filter(Show.user_id == user.id).order_by(Show.sort.asc(), Show.id.asc()).all()
+    photos = db.query(Photo).filter(Photo.user_id == user.id).order_by(Photo.sort.asc(), Photo.id.asc()).all()
+    clips = db.query(Clip).filter(Clip.user_id == user.id).order_by(Clip.sort.asc(), Clip.id.asc()).all()
+    posts = db.query(Post).filter(Post.user_id == user.id).order_by(Post.sort.asc(), Post.id.desc()).all()
     return {
         "username": user.username,
         "display_name": display_name(user),
@@ -219,6 +245,9 @@ def profile_payload(user: User, db: Session) -> dict:
         "tracks": [track_dict(t) for t in tracks],
         "releases": [release_dict(r) for r in releases],
         "shows": [show_dict(s) for s in shows],
+        "photos": [photo_dict(p) for p in photos],
+        "clips": [clip_dict(c) for c in clips],
+        "posts": [post_dict(p) for p in posts],
     }
 
 
@@ -590,6 +619,93 @@ async def delete_my_show(show_id: int, user: User = Depends(get_current_user), d
     db.delete(s)
     db.commit()
     return {"message": "Show deleted"}
+
+
+# ---- photographer: photos (gallery) ----
+@app.get("/api/me/photos")
+async def list_my_photos(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rows = db.query(Photo).filter(Photo.user_id == user.id).order_by(Photo.sort.asc(), Photo.id.asc()).all()
+    return [photo_dict(p) for p in rows]
+
+
+@app.post("/api/me/photos")
+async def create_my_photo(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    image_url = (data.get("image_url") or "").strip()
+    if not image_url:
+        raise HTTPException(400, "An image is required")
+    p = Photo(image_url=image_url, caption=(data.get("caption") or "").strip() or None, user_id=user.id)
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    return photo_dict(p)
+
+
+@app.delete("/api/me/photos/{photo_id}")
+async def delete_my_photo(photo_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    p = db.query(Photo).filter(Photo.id == photo_id, Photo.user_id == user.id).first()
+    if not p:
+        raise HTTPException(404, "Photo not found")
+    db.delete(p)
+    db.commit()
+    return {"message": "Photo deleted"}
+
+
+# ---- content creator: clips (featured videos) ----
+@app.get("/api/me/clips")
+async def list_my_clips(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rows = db.query(Clip).filter(Clip.user_id == user.id).order_by(Clip.sort.asc(), Clip.id.asc()).all()
+    return [clip_dict(c) for c in rows]
+
+
+@app.post("/api/me/clips")
+async def create_my_clip(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    url = (data.get("url") or "").strip()
+    if not url:
+        raise HTTPException(400, "A video URL is required")
+    c = Clip(url=url, title=(data.get("title") or "").strip() or None, user_id=user.id)
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    return clip_dict(c)
+
+
+@app.delete("/api/me/clips/{clip_id}")
+async def delete_my_clip(clip_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    c = db.query(Clip).filter(Clip.id == clip_id, Clip.user_id == user.id).first()
+    if not c:
+        raise HTTPException(404, "Clip not found")
+    db.delete(c)
+    db.commit()
+    return {"message": "Clip deleted"}
+
+
+# ---- writer: posts ----
+@app.get("/api/me/posts")
+async def list_my_posts(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rows = db.query(Post).filter(Post.user_id == user.id).order_by(Post.sort.asc(), Post.id.desc()).all()
+    return [post_dict(p) for p in rows]
+
+
+@app.post("/api/me/posts")
+async def create_my_post(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    title = (data.get("title") or "").strip()
+    if not title:
+        raise HTTPException(400, "A post title is required")
+    p = Post(title=title, body=(data.get("body") or "").strip() or None, user_id=user.id)
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    return post_dict(p)
+
+
+@app.delete("/api/me/posts/{post_id}")
+async def delete_my_post(post_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    p = db.query(Post).filter(Post.id == post_id, Post.user_id == user.id).first()
+    if not p:
+        raise HTTPException(404, "Post not found")
+    db.delete(p)
+    db.commit()
+    return {"message": "Post deleted"}
 
 
 # ---- profiles ----

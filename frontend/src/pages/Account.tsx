@@ -6,6 +6,9 @@ import { fetchOEmbedTitle } from "../lib/oembed";
 import { useAuth, clearSession } from "../lib/auth";
 import { THEMES, type ThemeId } from "../lib/themes";
 import MusicManager from "../components/MusicManager";
+import GalleryManager from "../components/GalleryManager";
+import ClipManager from "../components/ClipManager";
+import PostManager from "../components/PostManager";
 import ProfileView, { type PublicProfile, type LayoutSection } from "../components/ProfileView";
 import { compressAndResizeImage } from "../lib/upload";
 
@@ -37,29 +40,39 @@ const SECTION_LABELS: Record<string, string> = {
   tracks: "Tracks",
   releases: "Releases",
   shows: "Shows",
+  gallery: "Gallery",
+  videos: "Videos",
+  posts: "Writing",
 };
 
-const ALL_SECTION_TYPES = ["about", "projects", "tracks", "releases", "shows"];
+const ALL_SECTION_TYPES = ["about", "projects", "tracks", "releases", "shows", "gallery", "videos", "posts"];
 
 // Each theme implies a section preset (a profession bundle). Music shows the
 // music modules; everything else shows the general set. Data is never deleted —
 // non-preset sections are appended hidden so they stay toggleable.
 // Links aren't part of this reorderable set — they're a fixed block that
 // always renders right under the profile header (see ProfileView.tsx).
+const PROFESSION_PRESETS: Record<string, string[]> = {
+  music: ["about", "tracks", "releases", "shows"],
+  photographer: ["about", "gallery"],
+  creator: ["about", "videos"],
+  writer: ["about", "posts"],
+};
+
 function presetFor(theme: string): LayoutSection[] {
-  const order =
-    theme === "music"
-      ? ["about", "tracks", "releases", "shows"]
-      : ["about", "projects"];
+  const order = PROFESSION_PRESETS[theme] || ["about", "projects"];
   const visible = order.map((type) => ({ type, visible: true }));
   const hidden = ALL_SECTION_TYPES.filter((t) => !order.includes(t)).map((type) => ({ type, visible: false }));
   return [...visible, ...hidden];
 }
 
-type Tab = "profile" | "music" | "links" | "projects" | "preview" | "settings";
+type Tab = "profile" | "music" | "gallery" | "videos" | "posts" | "links" | "projects" | "preview" | "settings";
 const TABS: { id: Tab; label: string }[] = [
   { id: "profile", label: "Profile" },
   { id: "music", label: "Music" },
+  { id: "gallery", label: "Gallery" },
+  { id: "videos", label: "Videos" },
+  { id: "posts", label: "Writing" },
   { id: "links", label: "Links" },
   { id: "projects", label: "Projects" },
   { id: "preview", label: "Preview" },
@@ -70,6 +83,9 @@ const TABS: { id: Tab; label: string }[] = [
 // "always shown" (Links/Projects/Preview/Settings apply to every profession).
 const TAB_PROFESSION: Partial<Record<Tab, ThemeId>> = {
   music: "music",
+  gallery: "photographer",
+  videos: "creator",
+  posts: "writer",
 };
 
 export default function Account() {
@@ -336,6 +352,9 @@ export default function Account() {
     tracks: previewSource?.tracks || [],
     releases: previewSource?.releases || [],
     shows: previewSource?.shows || [],
+    photos: previewSource?.photos || [],
+    clips: previewSource?.clips || [],
+    posts: previewSource?.posts || [],
   };
 
   const card = "border border-line bg-surface rounded-card p-6 shadow-card";
@@ -504,6 +523,36 @@ export default function Account() {
               {profNotice && <p className="text-success text-sm mt-2">{profNotice}</p>}
             </div>
             <MusicManager />
+          </div>
+        )}
+
+        {/* GALLERY */}
+        {tab === "gallery" && (
+          <div className={card}>
+            <p className="text-muted text-sm mb-6">
+              Add photos to your gallery. Sections are arranged automatically for the <strong className="text-text">Photographer</strong> profession.
+            </p>
+            <GalleryManager />
+          </div>
+        )}
+
+        {/* VIDEOS */}
+        {tab === "videos" && (
+          <div className={card}>
+            <p className="text-muted text-sm mb-6">
+              Add your featured videos. Sections are arranged automatically for the <strong className="text-text">Content Creator</strong> profession.
+            </p>
+            <ClipManager />
+          </div>
+        )}
+
+        {/* POSTS */}
+        {tab === "posts" && (
+          <div className={card}>
+            <p className="text-muted text-sm mb-6">
+              Write and publish posts. Sections are arranged automatically for the <strong className="text-text">Writer</strong> profession.
+            </p>
+            <PostManager />
           </div>
         )}
 

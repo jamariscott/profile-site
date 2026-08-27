@@ -122,6 +122,37 @@ class Show(Base):
     sort = Column(Integer, nullable=True, default=0)
 
 
+# ---- Photographer profession module (per-user) ----
+class Photo(Base):
+    __tablename__ = "photos"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    image_url = Column(Text, nullable=False)   # uploaded (base64 data URL) or pasted URL
+    caption = Column(String, nullable=True)
+    sort = Column(Integer, nullable=True, default=0)
+
+
+# ---- Content-creator profession module (per-user): featured video clips ----
+class Clip(Base):
+    __tablename__ = "clips"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    url = Column(String, nullable=False)   # YouTube / TikTok / etc. link
+    title = Column(String, nullable=True)
+    sort = Column(Integer, nullable=True, default=0)
+
+
+# ---- Writer profession module (per-user): short posts / essays ----
+class Post(Base):
+    __tablename__ = "posts"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    body = Column(Text, nullable=True)         # rich-text HTML
+    created_at = Column(DateTime, default=func.now())
+    sort = Column(Integer, nullable=True, default=0)
+
+
 # Comments on Writing posts. Admin-moderated: created as "pending", shown
 # publicly only once "approved".
 class Comment(Base):

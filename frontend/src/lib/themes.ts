@@ -2,7 +2,15 @@
 // To add a theme: add an entry here, add a matching [data-theme="id"] block in
 // src/index.css, and add the id to VALID_THEMES in the backend (main.py).
 
-export type ThemeId = "classic" | "huffpost" | "twilight" | "music" | "developer";
+export type ThemeId =
+  | "classic"
+  | "huffpost"
+  | "twilight"
+  | "music"
+  | "developer"
+  | "photographer"
+  | "creator"
+  | "writer";
 
 export interface ThemeMeta {
   id: ThemeId;
@@ -53,6 +61,27 @@ export const THEMES: ThemeMeta[] = [
     label: "Developer",
     description: "Clean, technical, built for makers",
     swatch: ["#0b0e14", "#111620", "#5eead4"],
+    kind: "profession",
+  },
+  {
+    id: "photographer",
+    label: "Photographer",
+    description: "Gallery-forward, dark, made for images",
+    swatch: ["#0c0c0d", "#161618", "#d4af74"],
+    kind: "profession",
+  },
+  {
+    id: "creator",
+    label: "Content Creator",
+    description: "Vibrant, video-first, built for creators",
+    swatch: ["#0e0c14", "#181522", "#a76fff"],
+    kind: "profession",
+  },
+  {
+    id: "writer",
+    label: "Writer",
+    description: "Warm paper, editorial serif, for the written word",
+    swatch: ["#f7f3eb", "#fdfaf4", "#b0583e"],
     kind: "profession",
   },
 ];

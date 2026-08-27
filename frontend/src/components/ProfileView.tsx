@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
 import ShareButton from "./ShareButton";
@@ -38,6 +39,9 @@ export interface ProfileLink { id: number; label: string; href: string; note: st
 export interface ProfileTrack { id: number; url: string; title: string | null; }
 export interface ProfileRelease { id: number; title: string; year: string | null; cover_url: string | null; link: string | null; }
 export interface ProfileShow { id: number; date: string | null; venue: string | null; city: string | null; ticket_url: string | null; }
+export interface ProfilePhoto { id: number; image_url: string; caption: string | null; }
+export interface ProfileClip { id: number; url: string; title: string | null; }
+export interface ProfilePost { id: number; title: string; body: string | null; created_at: string | null; }
 export interface LayoutSection { type: string; visible: boolean; }
 
 export interface PublicProfile {
@@ -55,6 +59,9 @@ export interface PublicProfile {
   tracks: ProfileTrack[];
   releases: ProfileRelease[];
   shows: ProfileShow[];
+  photos: ProfilePhoto[];
+  clips: ProfileClip[];
+  posts: ProfilePost[];
 }
 
 /**
@@ -63,6 +70,7 @@ export interface PublicProfile {
  */
 export default function ProfileView({ profile }: { profile: PublicProfile }) {
   const sections = (profile.layout || []).filter((s) => s.visible);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   const renderSection = (type: string) => {
     if (type === "about") {
@@ -189,6 +197,70 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
         </section>
       );
     }
+    if (type === "gallery") {
+      const photos = profile.photos || [];
+      if (photos.length === 0) return null;
+      return (
+        <section key="gallery" className="mb-12">
+          <h2 className="text-sm font-medium tracking-widest uppercase text-muted mb-4">Gallery</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {photos.map((ph) => (
+              <button
+                key={ph.id}
+                type="button"
+                onClick={() => setLightbox(ph.image_url)}
+                className="group aspect-square rounded-card overflow-hidden bg-surface-2 border border-line cursor-zoom-in"
+              >
+                <img
+                  src={ph.image_url}
+                  alt={ph.caption || ""}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </button>
+            ))}
+          </div>
+        </section>
+      );
+    }
+    if (type === "videos") {
+      const clips = profile.clips || [];
+      if (clips.length === 0) return null;
+      return (
+        <section key="videos" className="mb-12">
+          <h2 className="text-sm font-medium tracking-widest uppercase text-muted mb-4">Videos</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {clips.map((c) => (
+              <TrackEmbed key={c.id} url={c.url} title={c.title} />
+            ))}
+          </div>
+        </section>
+      );
+    }
+    if (type === "posts") {
+      const posts = profile.posts || [];
+      if (posts.length === 0) return null;
+      return (
+        <section key="posts" className="mb-12">
+          <h2 className="text-sm font-medium tracking-widest uppercase text-muted mb-4">Writing</h2>
+          <div className="space-y-8">
+            {posts.map((p) => (
+              <article key={p.id} className="border-b border-line pb-8 last:border-b-0">
+                <h3 className="text-2xl font-bold text-text mb-1">{p.title}</h3>
+                {p.created_at && (
+                  <span className="text-subtle text-xs block mb-3">
+                    {new Date(p.created_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+                  </span>
+                )}
+                {p.body && (
+                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: p.body }} />
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      );
+    }
     return null;
   };
 
@@ -198,6 +270,9 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
     if (s.type === "tracks") return profile.tracks.length === 0;
     if (s.type === "releases") return profile.releases.length === 0;
     if (s.type === "shows") return profile.shows.length === 0;
+    if (s.type === "gallery") return (profile.photos || []).length === 0;
+    if (s.type === "videos") return (profile.clips || []).length === 0;
+    if (s.type === "posts") return (profile.posts || []).length === 0;
     return true;
   });
 
@@ -260,6 +335,23 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
         <p className="text-muted">
           This profile is just getting started. <Link to="/account" className="text-accent hover:text-accent-hover">Add some content →</Link>
         </p>
+      )}
+
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out"
+        >
+          <img src={lightbox} alt="" className="max-w-full max-h-full object-contain rounded-card" />
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            aria-label="Close"
+            className="absolute top-5 right-5 text-white/80 hover:text-white text-3xl leading-none"
+          >
+            ×
+          </button>
+        </div>
       )}
     </>
   );

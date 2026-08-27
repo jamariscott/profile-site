@@ -235,6 +235,84 @@ html[data-layout="dailywire"][data-mode="dark"]:not([data-theme]) {
   color-scheme: dark;
 }
 
+/* ---- PHOTOGRAPHER: gallery-forward, dark so images pop, warm gold accent ---- */
+[data-theme="photographer"] {
+  --c-bg: 12 12 13;
+  --c-surface: 22 22 24;
+  --c-surface-2: 34 34 37;
+  --c-text: 240 238 233;
+  --c-muted: 168 164 156;
+  --c-subtle: 115 112 105;
+  --c-line: 42 42 45;
+  --c-line-strong: 66 66 70;
+  --c-accent: 212 175 116;        /* warm gold */
+  --c-accent-hover: 194 156 96;
+  --c-accent-contrast: 18 18 18;
+  --c-danger: 248 113 113;
+  --c-success: 74 222 128;
+
+  --font-heading: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-card: 0.375rem;        /* crisp, gallery-frame feel */
+  --radius-btn: 0.375rem;
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.04), 0 12px 32px rgb(0 0 0 / 0.55);
+
+  color-scheme: dark;
+}
+
+/* ---- CREATOR: vibrant, energetic, electric-violet accent (influencers) ---- */
+[data-theme="creator"] {
+  --c-bg: 14 12 20;
+  --c-surface: 24 21 34;
+  --c-surface-2: 36 31 52;
+  --c-text: 245 243 250;
+  --c-muted: 176 168 196;
+  --c-subtle: 124 116 146;
+  --c-line: 48 42 66;
+  --c-line-strong: 74 66 98;
+  --c-accent: 167 111 255;        /* electric violet */
+  --c-accent-hover: 147 87 245;
+  --c-accent-contrast: 255 255 255;
+  --c-danger: 248 113 113;
+  --c-success: 74 222 128;
+
+  --font-heading: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-btn: 9999px;           /* pill buttons */
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.05), 0 14px 36px rgb(0 0 0 / 0.5);
+
+  color-scheme: dark;
+}
+
+/* ---- WRITER: warm paper, editorial serif, deep terracotta accent ---- */
+[data-theme="writer"] {
+  --c-bg: 247 243 235;
+  --c-surface: 253 250 244;
+  --c-surface-2: 240 234 223;
+  --c-text: 38 34 30;
+  --c-muted: 104 96 86;
+  --c-subtle: 150 140 128;
+  --c-line: 226 218 205;
+  --c-line-strong: 202 192 176;
+  --c-accent: 176 88 62;          /* deep terracotta */
+  --c-accent-hover: 152 72 50;
+  --c-accent-contrast: 255 255 255;
+  --c-danger: 190 40 40;
+  --c-success: 34 130 80;
+
+  --font-heading: Georgia, "Times New Roman", Times, serif;
+  --font-body: Georgia, "Times New Roman", Times, serif;
+
+  --radius-card: 0.5rem;
+  --radius-btn: 0.375rem;
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.08);
+
+  color-scheme: light;
+}
+
 /* ============================================================
    BASE
    ============================================================ */
