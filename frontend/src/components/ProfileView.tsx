@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
 import ShareButton from "./ShareButton";
+import Reveal from "./Reveal";
 import {
   GitHubIcon,
   SpotifyIcon,
@@ -249,7 +250,11 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
         <p className="text-xs text-subtle mb-6">Private — only you can see this. Make it public from your account.</p>
       )}
 
-      {sections.map((s) => renderSection(s.type))}
+      {sections.map((s, i) => (
+        <Reveal key={s.type} delay={i * 0.04}>
+          {renderSection(s.type)}
+        </Reveal>
+      ))}
 
       {allEmpty && (
         <p className="text-muted">

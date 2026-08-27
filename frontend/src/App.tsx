@@ -1,4 +1,4 @@
-import Admin from "./pages/Admin";
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 
@@ -9,27 +9,36 @@ import Videos from "./pages/Videos";
 import Search from "./pages/Search";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Account from "./pages/Account";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import AdminLayoutSwitcher from "./components/AdminLayoutSwitcher";
+import { useSmoothScroll } from "./lib/useSmoothScroll";
+
+// Heaviest, auth-gated pages (Admin pulls in the TipTap editor) — split out of
+// the initial bundle so public pages load lighter.
+const Admin = lazy(() => import("./pages/Admin"));
+const Account = lazy(() => import("./pages/Account"));
 
 export default function App() {
+  useSmoothScroll();
+
   return (
     <>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/writing" element={<Writing />} />
-        <Route path="/writing/:slug" element={<WritingPost />} />
-        <Route path="/videos" element={<Videos />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/u/:username" element={<Profile />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <Suspense fallback={<div className="bg-bg min-h-screen" />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/writing" element={<Writing />} />
+          <Route path="/writing/:slug" element={<WritingPost />} />
+          <Route path="/videos" element={<Videos />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/u/:username" element={<Profile />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
       <AdminLayoutSwitcher />
       <Analytics />
     </>

@@ -20,6 +20,7 @@
     "@tiptap/starter-kit": "^2.11.7",
     "@vercel/analytics": "^1.4.1",
     "framer-motion": "^12.42.2",
+    "lenis": "^1.1.13",
     "lucide-react": "^1.25.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Lenis smooth scroll (embeds stay interactive — no iframe pointer-events rule) */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
 /* ============================================================
    THEME TOKENS — the single source of truth for the site's look.
    Each theme is one block of CSS variables. To retune a theme,

@@ -9,6 +9,7 @@ import DailyWireFooter from "../components/DailyWireFooter";
 import { API_BASE } from "../lib/config";
 import { useAuth, type AuthSession } from "../lib/auth";
 import { useLayout } from "../theme/LayoutProvider";
+import Reveal from "../components/Reveal";
 
 interface WritingPost {
   slug: string;
@@ -96,7 +97,8 @@ function ClassicHome({ session, hero, rest }: VariantProps) {
           <p className="text-muted">No articles yet.</p>
         ) : (
           <>
-            <Link to={`/writing/${hero.slug}`} className="block group mb-14">
+            <Reveal className="block mb-14">
+            <Link to={`/writing/${hero.slug}`} className="block group">
               {extractThumbnail(hero) && (
                 <div className="w-full h-72 md:h-96 rounded-card overflow-hidden mb-5">
                   <img
@@ -112,15 +114,17 @@ function ClassicHome({ session, hero, rest }: VariantProps) {
               </h3>
               <p className="text-muted md:text-lg line-clamp-2 max-w-3xl">{hero.summary}</p>
             </Link>
+            </Reveal>
 
             {rest.length > 0 && (
               <>
                 <hr className="border-line mb-10" />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {rest.map((post) => {
+                  {rest.map((post, i) => {
                     const thumb = extractThumbnail(post);
                     return (
-                      <Link key={post.slug} to={`/writing/${post.slug}`} className="block group">
+                      <Reveal key={post.slug} delay={i * 0.05}>
+                      <Link to={`/writing/${post.slug}`} className="block group">
                         {thumb && (
                           <div className="w-full h-40 rounded-xl overflow-hidden mb-3">
                             <img
@@ -136,6 +140,7 @@ function ClassicHome({ session, hero, rest }: VariantProps) {
                         </h3>
                         <p className="text-muted text-sm line-clamp-2">{post.summary}</p>
                       </Link>
+                      </Reveal>
                     );
                   })}
                 </div>
