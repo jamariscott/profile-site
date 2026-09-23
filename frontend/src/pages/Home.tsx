@@ -33,6 +33,23 @@ interface VariantProps {
   session: AuthSession | null;
   hero?: WritingPost;
   rest: WritingPost[];
+  loading: boolean;
+}
+
+/** Placeholder shown while articles load, instead of flashing "No articles yet." */
+function FeedSkeleton() {
+  return (
+    <div className="animate-pulse" aria-hidden>
+      <div className="w-full h-72 md:h-96 rounded-card bg-surface-2 mb-5" />
+      <div className="h-3 w-24 rounded bg-surface-2 mb-3" />
+      <div className="h-8 w-3/4 rounded bg-surface-2 mb-3" />
+      <div className="h-4 w-1/2 rounded bg-surface-2" />
+    </div>
+  );
+}
+
+function EmptyFeed({ loading }: { loading: boolean }) {
+  return loading ? <FeedSkeleton /> : <p className="text-muted">No articles yet.</p>;
 }
 
 /** Shared hero call-to-action: signup/login for guests, a profile link for members. */
@@ -72,7 +89,7 @@ function HeroCtas({ session }: { session: AuthSession | null }) {
 }
 
 /** Today's design: brand hero + a featured article + a 3-column grid feed. */
-function ClassicHome({ session, hero, rest }: VariantProps) {
+function ClassicHome({ session, hero, rest, loading }: VariantProps) {
   const heroThumb = hero ? extractThumbnail(hero) : null;
 
   return (
@@ -94,7 +111,7 @@ function ClassicHome({ session, hero, rest }: VariantProps) {
         <h2 className="text-sm font-medium tracking-widest uppercase text-muted mb-8">Latest</h2>
 
         {!hero ? (
-          <p className="text-muted">No articles yet.</p>
+          <EmptyFeed loading={loading} />
         ) : (
           <>
             <Reveal className="block mb-14">
@@ -104,7 +121,7 @@ function ClassicHome({ session, hero, rest }: VariantProps) {
                   <img
                     src={heroThumb!}
                     alt={hero.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
               )}
@@ -130,7 +147,9 @@ function ClassicHome({ session, hero, rest }: VariantProps) {
                             <img
                               src={thumb}
                               alt={post.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
                             />
                           </div>
                         )}
@@ -156,7 +175,7 @@ function ClassicHome({ session, hero, rest }: VariantProps) {
 }
 
 /** Bold editorial feel: serif headline hero, big featured story beside a dense headline list. */
-function HuffPostHome({ session, hero, rest }: VariantProps) {
+function HuffPostHome({ session, hero, rest, loading }: VariantProps) {
   const heroThumb = hero ? extractThumbnail(hero) : null;
   const sidebar = rest.slice(0, 5);
   const grid = rest.slice(5);
@@ -180,7 +199,7 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
 
       <div className="max-w-6xl mx-auto px-6 py-12 flex-1 w-full">
         {!hero ? (
-          <p className="text-muted">No articles yet.</p>
+          <EmptyFeed loading={loading} />
         ) : (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
@@ -191,7 +210,7 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
                     <img
                       src={heroThumb}
                       alt={hero.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                 )}
@@ -236,7 +255,9 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
                             <img
                               src={thumb}
                               alt={post.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
                             />
                           </div>
                         )}
@@ -260,7 +281,7 @@ function HuffPostHome({ session, hero, rest }: VariantProps) {
 }
 
 /** Opinion-led feel: byline-forward hero card, then a vertical feed of byline-first story cards. */
-function DailyWireHome({ session, hero, rest }: VariantProps) {
+function DailyWireHome({ session, hero, rest, loading }: VariantProps) {
   const heroThumb = hero ? extractThumbnail(hero) : null;
 
   return (
@@ -279,7 +300,7 @@ function DailyWireHome({ session, hero, rest }: VariantProps) {
 
       <div className="max-w-4xl mx-auto px-6 py-12 flex-1 w-full">
         {!hero ? (
-          <p className="text-muted">No articles yet.</p>
+          <EmptyFeed loading={loading} />
         ) : (
           <div className="space-y-10">
             <Reveal>
@@ -296,7 +317,7 @@ function DailyWireHome({ session, hero, rest }: VariantProps) {
                   <img
                     src={heroThumb}
                     alt={hero.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
               )}
@@ -330,7 +351,9 @@ function DailyWireHome({ session, hero, rest }: VariantProps) {
                           <img
                             src={thumb}
                             alt={post.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
                           />
                         </div>
                       )}
@@ -353,17 +376,19 @@ export default function Home() {
   const session = useAuth();
   const { layout } = useLayout();
   const [articles, setArticles] = useState<WritingPost[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/writing`)
       .then((res) => res.json())
       .then((data) => setArticles(Array.isArray(data) ? data : []))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const [hero, ...rest] = articles;
 
-  if (layout === "huffpost") return <HuffPostHome session={session} hero={hero} rest={rest} />;
-  if (layout === "dailywire") return <DailyWireHome session={session} hero={hero} rest={rest} />;
-  return <ClassicHome session={session} hero={hero} rest={rest} />;
+  if (layout === "huffpost") return <HuffPostHome session={session} hero={hero} rest={rest} loading={loading} />;
+  if (layout === "dailywire") return <DailyWireHome session={session} hero={hero} rest={rest} loading={loading} />;
+  return <ClassicHome session={session} hero={hero} rest={rest} loading={loading} />;
 }

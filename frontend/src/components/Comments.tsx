@@ -77,19 +77,21 @@ export default function Comments({ slug }: { slug: string }) {
 
       {session ? (
         <form onSubmit={submit}>
+          <label htmlFor="comment-body" className="sr-only">Your comment</label>
           <textarea
+            id="comment-body"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Add a comment…"
             rows={4}
             className="border border-line bg-surface text-text p-3 w-full rounded-btn mb-3"
           />
-          {error && <p className="text-danger text-sm mb-2">{error}</p>}
-          {notice && <p className="text-success text-sm mb-2">{notice}</p>}
+          {error && <p role="alert" className="text-danger text-sm mb-2">{error}</p>}
+          {notice && <p role="status" className="text-success text-sm mb-2">{notice}</p>}
           <button
             type="submit"
             disabled={submitting}
-            className="bg-accent text-accent-contrast px-6 py-2.5 rounded-btn font-medium disabled:opacity-50"
+            className="bg-accent text-accent-contrast px-6 py-2.5 rounded-btn font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? "Posting…" : "Post comment"}
           </button>

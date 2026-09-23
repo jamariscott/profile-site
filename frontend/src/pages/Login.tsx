@@ -43,24 +43,32 @@ export default function Login() {
         <form onSubmit={submit} className="space-y-4">
           <input
             type="text"
+            id="identifier"
+            name="identifier"
+            autoComplete="username"
             placeholder="Username or email"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             className="border border-line bg-surface text-text p-3 w-full rounded-btn"
             autoFocus
           />
+          <label htmlFor="identifier" className="sr-only">Username or email</label>
+          <label htmlFor="password" className="sr-only">Password</label>
           <input
             type="password"
+            id="password"
+            name="password"
+            autoComplete="current-password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="border border-line bg-surface text-text p-3 w-full rounded-btn"
           />
-          {error && <p className="text-danger text-sm">{error}</p>}
+          {error && <p role="alert" className="text-danger text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="bg-accent text-accent-contrast px-6 py-3 rounded-btn w-full font-medium disabled:opacity-50"
+            className="bg-accent text-accent-contrast px-6 py-3 rounded-btn w-full font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Logging in…" : "Log in"}
           </button>

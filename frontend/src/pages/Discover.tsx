@@ -19,6 +19,44 @@ interface DiscoverProfile {
 const PROFESSIONS = THEMES.filter((t) => t.kind === "profession");
 const THEME_LABEL: Record<string, string> = Object.fromEntries(THEMES.map((t) => [t.id, t.label]));
 
+/** Avatar image that falls back to the initial if the URL is missing or broken. */
+function Avatar({ url, name }: { url: string | null; name: string }) {
+  const [broken, setBroken] = useState(false);
+  if (url && !broken) {
+    return (
+      <img
+        src={url}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="w-14 h-14 rounded-full object-cover border border-line shrink-0"
+        onError={() => setBroken(true)}
+      />
+    );
+  }
+  return (
+    <div className="w-14 h-14 rounded-full bg-surface-2 border border-line flex items-center justify-center text-muted font-semibold shrink-0" aria-hidden>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+function CardSkeleton() {
+  return (
+    <div className="h-full bg-surface border border-line rounded-card p-6 shadow-card animate-pulse" aria-hidden>
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-full bg-surface-2 shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-2/3 rounded bg-surface-2" />
+          <div className="h-3 w-1/3 rounded bg-surface-2" />
+        </div>
+      </div>
+      <div className="h-3 w-full rounded bg-surface-2 mt-5" />
+      <div className="h-5 w-20 rounded-full bg-surface-2 mt-4" />
+    </div>
+  );
+}
+
 export default function Discover() {
   const [filter, setFilter] = useState<string>("");
   const [profiles, setProfiles] = useState<DiscoverProfile[]>([]);
@@ -52,17 +90,20 @@ export default function Discover() {
       </section>
 
       <div className="max-w-5xl mx-auto px-6 py-10 flex-1 w-full">
-        <div className="flex flex-wrap justify-center gap-2 mb-10">
-          <button onClick={() => setFilter("")} className={chip(filter === "")}>All</button>
+        <div className="flex flex-wrap justify-center gap-2 mb-10" role="group" aria-label="Filter by profession">
+          <button onClick={() => setFilter("")} aria-pressed={filter === ""} className={chip(filter === "")}>All</button>
           {PROFESSIONS.map((p) => (
-            <button key={p.id} onClick={() => setFilter(p.id)} className={chip(filter === p.id)}>
+            <button key={p.id} onClick={() => setFilter(p.id)} aria-pressed={filter === p.id} className={chip(filter === p.id)}>
               {p.label}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <p className="text-muted text-center">Loading…</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" aria-busy="true">
+            {[0, 1, 2, 3, 4, 5].map((i) => <CardSkeleton key={i} />)}
+            <span className="sr-only">Loading profiles…</span>
+          </div>
         ) : profiles.length === 0 ? (
           <p className="text-muted text-center">
             {filter ? "No profiles here yet — be the first." : "No public profiles yet."}
@@ -76,18 +117,7 @@ export default function Discover() {
                   className="block h-full bg-surface border border-line rounded-card p-6 shadow-card hover:border-line-strong hover:shadow-md transition-all group"
                 >
                   <div className="flex items-center gap-4">
-                    {p.avatar_url ? (
-                      <img
-                        src={p.avatar_url}
-                        alt={p.display_name}
-                        className="w-14 h-14 rounded-full object-cover border border-line shrink-0"
-                        onError={(e) => (e.currentTarget.style.display = "none")}
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-full bg-surface-2 border border-line flex items-center justify-center text-muted font-semibold shrink-0">
-                        {p.display_name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <Avatar url={p.avatar_url} name={p.display_name} />
                     <div className="min-w-0">
                       <h3 className="text-text font-semibold leading-tight truncate group-hover:text-accent transition-colors">
                         {p.display_name}

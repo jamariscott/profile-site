@@ -23,6 +23,12 @@ export default {
         danger: "rgb(var(--c-danger) / <alpha-value>)",
         success: "rgb(var(--c-success) / <alpha-value>)",
       },
+      // Solid fills (bg-accent buttons) use a deeper shade where needed so
+      // accent-contrast text on them passes 4.5:1; text/border accents keep the brand hue.
+      backgroundColor: {
+        accent: "rgb(var(--c-accent-fill) / <alpha-value>)",
+        "accent-hover": "rgb(var(--c-accent-fill-hover) / <alpha-value>)",
+      },
       fontFamily: {
         heading: "var(--font-heading)",
         body: "var(--font-body)",

@@ -39,7 +39,19 @@ export default function Writing() {
       });
   }, []);
 
-  if (loading) return <div className="max-w-5xl mx-auto p-8">Loading writing...</div>;
+  if (loading) return (
+    <div className="bg-bg min-h-screen">
+      <SiteNav />
+      <div className="max-w-5xl mx-auto px-6 py-12 animate-pulse" aria-busy="true">
+        <h1 className="text-5xl font-bold text-text mb-10">Writing</h1>
+        <div className="w-full h-80 rounded-2xl bg-surface-2 mb-6" />
+        <div className="h-3 w-24 rounded bg-surface-2 mb-3" />
+        <div className="h-9 w-3/4 rounded bg-surface-2 mb-3" />
+        <div className="h-4 w-1/2 rounded bg-surface-2" />
+        <span className="sr-only">Loading writing…</span>
+      </div>
+    </div>
+  );
 
   if (posts.length === 0) return (
     <div className="bg-bg min-h-screen">
@@ -67,7 +79,7 @@ export default function Writing() {
               <img
                 src={heroThumb}
                 alt={hero.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
               />
             </div>
           )}
@@ -99,7 +111,9 @@ export default function Writing() {
                     <img
                       src={thumb}
                       alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
                 )}

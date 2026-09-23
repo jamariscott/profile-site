@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
+import { X } from "lucide-react";
+import { useEscapeKey } from "../lib/useEscapeKey";
 import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
 import ShareButton from "./ShareButton";
 import Reveal from "./Reveal";
@@ -70,7 +72,9 @@ export interface PublicProfile {
  */
 export default function ProfileView({ profile }: { profile: PublicProfile }) {
   const sections = (profile.layout || []).filter((s) => s.visible);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<ProfilePhoto | null>(null);
+  const closeLightbox = useCallback(() => setLightbox(null), []);
+  useEscapeKey(lightbox !== null, closeLightbox);
 
   const renderSection = (type: string) => {
     if (type === "about") {
@@ -208,14 +212,15 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
               <button
                 key={ph.id}
                 type="button"
-                onClick={() => setLightbox(ph.image_url)}
+                onClick={() => setLightbox(ph)}
+                aria-label={ph.caption ? `View photo: ${ph.caption}` : "View photo"}
                 className="group aspect-square rounded-card overflow-hidden bg-surface-2 border border-line cursor-zoom-in"
               >
                 <img
                   src={ph.image_url}
                   alt={ph.caption || ""}
                   loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
                 />
               </button>
             ))}
@@ -339,17 +344,21 @@ export default function ProfileView({ profile }: { profile: PublicProfile }) {
 
       {lightbox && (
         <div
-          onClick={() => setLightbox(null)}
-          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={closeLightbox}
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightbox.caption || "Photo"}
+          className="on-dark fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out"
         >
-          <img src={lightbox} alt="" className="max-w-full max-h-full object-contain rounded-card" />
+          <img src={lightbox.image_url} alt={lightbox.caption || ""} className="max-w-full max-h-full object-contain rounded-card" />
           <button
             type="button"
-            onClick={() => setLightbox(null)}
+            onClick={closeLightbox}
             aria-label="Close"
-            className="absolute top-5 right-5 text-white/80 hover:text-white text-3xl leading-none"
+            className="absolute top-5 right-5 text-white/80 hover:text-white"
+            autoFocus
           >
-            ×
+            <X size={28} aria-hidden />
           </button>
         </div>
       )}

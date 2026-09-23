@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check, Palette } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useLayout } from "../theme/LayoutProvider";
 import { LAYOUTS, type LayoutId } from "../lib/layouts";
@@ -45,6 +46,7 @@ export default function AdminLayoutSwitcher() {
                   key={l.id}
                   onClick={() => handlePickLayout(l.id)}
                   disabled={saving}
+                  aria-pressed={active}
                   className={`w-full flex items-center gap-3 rounded-btn border p-2.5 text-left transition-colors disabled:opacity-60 ${
                     active
                       ? "border-accent bg-surface-2"
@@ -58,9 +60,7 @@ export default function AdminLayoutSwitcher() {
                     </span>
                   </span>
                   {active && (
-                    <span className="text-accent text-sm" aria-hidden>
-                      ✓
-                    </span>
+                    <Check size={16} className="text-accent shrink-0" aria-hidden />
                   )}
                 </button>
               );
@@ -77,9 +77,10 @@ export default function AdminLayoutSwitcher() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Change site layout"
+        aria-expanded={open}
         className="flex items-center gap-2 rounded-full border border-line bg-surface text-text shadow-card px-4 py-2.5 text-sm font-medium hover:bg-surface-2 transition-colors"
       >
-        <span aria-hidden>🎨</span>
+        <Palette size={16} aria-hidden />
         <span>Layout</span>
       </button>
     </div>

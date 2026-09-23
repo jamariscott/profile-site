@@ -11,9 +11,9 @@ export default function HuffPostFooter() {
   const bg = mode === "dark" ? DARK_BG : LIGHT_BG;
 
   return (
-    <footer style={{ background: bg }}>
+    <footer className="on-dark" style={{ background: bg }}>
       <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-white text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 text-white text-sm">
           <div>
             <Link to="/" className="font-black italic text-xl">
               Timez of Today
@@ -26,6 +26,9 @@ export default function HuffPostFooter() {
             </Link>
             <Link to="/videos" className="block opacity-80 hover:opacity-100">
               Videos
+            </Link>
+            <Link to="/discover" className="block opacity-80 hover:opacity-100">
+              Discover
             </Link>
           </div>
           <div className="space-y-2">
@@ -44,15 +47,6 @@ export default function HuffPostFooter() {
                 </Link>
               </>
             )}
-          </div>
-          <div className="space-y-2">
-            <div className="font-bold">About</div>
-            <a href="#" className="block opacity-80 hover:opacity-100">
-              About Us
-            </a>
-            <a href="#" className="block opacity-80 hover:opacity-100">
-              Contact
-            </a>
           </div>
         </div>
         <div className="border-t border-white/20 mt-8 pt-6 flex items-center justify-between text-white/70 text-xs">

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Flag } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useDarkMode } from "../theme/DarkModeProvider";
 import DarkModeToggle from "./DarkModeToggle";
@@ -38,11 +39,9 @@ export default function DailyWireFooter() {
       )}
 
       <div style={{ borderTop: `1px solid ${border}` }}>
-        <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-3 gap-8">
           <div className="flex items-center gap-2">
-            <span style={{ color: RED }} aria-hidden>
-              &#9873;
-            </span>
+            <Flag size={16} fill="currentColor" style={{ color: RED }} className="shrink-0" aria-hidden />
             <Link to="/" className="font-extrabold uppercase tracking-tight" style={{ color: heading }}>
               Timez of Today
             </Link>
@@ -56,6 +55,9 @@ export default function DailyWireFooter() {
             </Link>
             <Link to="/videos" className="block hover:opacity-80" style={{ color: muted }}>
               Videos
+            </Link>
+            <Link to="/discover" className="block hover:opacity-80" style={{ color: muted }}>
+              Discover
             </Link>
           </div>
           <div className="space-y-2 text-sm">
@@ -76,17 +78,6 @@ export default function DailyWireFooter() {
                 </Link>
               </>
             )}
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="font-semibold" style={{ color: heading }}>
-              About
-            </div>
-            <a href="#" className="block hover:opacity-80" style={{ color: muted }}>
-              About
-            </a>
-            <a href="#" className="block hover:opacity-80" style={{ color: muted }}>
-              Contact
-            </a>
           </div>
         </div>
       </div>

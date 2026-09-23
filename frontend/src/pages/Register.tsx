@@ -56,55 +56,79 @@ export default function Register() {
         <p className="text-muted text-sm mb-6">Join to comment and access members-only areas.</p>
         <form onSubmit={submit} className="space-y-4">
           <div className="flex gap-3">
+            <label htmlFor="first_name" className="sr-only">First name</label>
             <input
               type="text"
+              id="first_name"
+              name="first_name"
+              autoComplete="given-name"
               placeholder="First name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               className="border border-line bg-surface text-text p-3 w-full rounded-btn"
               autoFocus
             />
+            <label htmlFor="last_name" className="sr-only">Last name</label>
             <input
               type="text"
+              id="last_name"
+              name="last_name"
+              autoComplete="family-name"
               placeholder="Last name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               className="border border-line bg-surface text-text p-3 w-full rounded-btn"
             />
           </div>
+          <label htmlFor="username" className="sr-only">Username</label>
           <input
             type="text"
+            id="username"
+            name="username"
+            autoComplete="username"
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="border border-line bg-surface text-text p-3 w-full rounded-btn"
           />
+          <label htmlFor="email" className="sr-only">Email</label>
           <input
             type="email"
+            id="email"
+            name="email"
+            autoComplete="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="border border-line bg-surface text-text p-3 w-full rounded-btn"
           />
+          <label htmlFor="phone" className="sr-only">Phone (optional)</label>
           <input
             type="tel"
+            id="phone"
+            name="phone"
+            autoComplete="tel"
             placeholder="Phone (optional)"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="border border-line bg-surface text-text p-3 w-full rounded-btn"
           />
+          <label htmlFor="password" className="sr-only">Password (minimum 8 characters)</label>
           <input
             type="password"
+            id="password"
+            name="password"
+            autoComplete="new-password"
             placeholder="Password (min 8 characters)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="border border-line bg-surface text-text p-3 w-full rounded-btn"
           />
-          {error && <p className="text-danger text-sm">{error}</p>}
+          {error && <p role="alert" className="text-danger text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="bg-accent text-accent-contrast px-6 py-3 rounded-btn w-full font-medium disabled:opacity-50"
+            className="bg-accent text-accent-contrast px-6 py-3 rounded-btn w-full font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Creating…" : "Create account"}
           </button>

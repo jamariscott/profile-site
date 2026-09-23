@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 items-end pointer-events-none">
+      <div role="status" aria-live="polite" className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 items-end pointer-events-none">
         {toasts.map((t) => {
           const style = VARIANT_STYLES[t.variant];
           return (
@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               {style.icon}
               <span className="flex-1 whitespace-pre-wrap">{t.message}</span>
-              <X size={16} className="text-subtle shrink-0 mt-0.5" />
+              <X size={16} className="text-subtle shrink-0 mt-0.5" aria-hidden />
             </div>
           );
         })}

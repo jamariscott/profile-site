@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { Moon, Sun } from "lucide-react";
 import { useDarkMode } from "../theme/DarkModeProvider";
 
 /** Small sun/moon toggle. Visible to every visitor on every page — not admin-gated. */
@@ -21,7 +22,7 @@ export default function DarkModeToggle({
         "w-8 h-8 rounded-full flex items-center justify-center border border-line text-text hover:bg-surface-2 transition-colors"
       }
     >
-      <span aria-hidden>{mode === "dark" ? "☾" : "☀"}</span>
+      {mode === "dark" ? <Moon size={16} aria-hidden /> : <Sun size={16} aria-hidden />}
     </button>
   );
 }

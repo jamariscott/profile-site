@@ -37,7 +37,20 @@ export default function Videos() {
     else { setViewMode('list'); setCompact(false); }
   };
 
-  if (loading) return <div className="max-w-4xl mx-auto p-8">Loading videos...</div>;
+  if (loading) return (
+    <div className="bg-bg min-h-screen">
+      <SiteNav />
+      <div className="max-w-4xl mx-auto px-6 py-12 animate-pulse" aria-busy="true">
+        <h1 className="text-5xl font-bold text-text mb-10">Videos</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="aspect-video rounded-card bg-surface-2" />
+          ))}
+        </div>
+        <span className="sr-only">Loading videos…</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-bg min-h-screen">
@@ -47,8 +60,8 @@ export default function Videos() {
         <h1 className="text-5xl font-bold text-text">Videos</h1>
 
         <div className="flex border border-line rounded-btn p-1 bg-surface shadow-card">
-          <button onClick={handleGridClick} className={`px-6 py-3 rounded-btn transition-all ${viewMode === 'grid' ? 'bg-accent text-accent-contrast' : 'text-muted hover:bg-surface-2'}`}>Grid</button>
-          <button onClick={handleListClick} className={`px-6 py-3 rounded-btn transition-all ${viewMode === 'list' ? 'bg-accent text-accent-contrast' : 'text-muted hover:bg-surface-2'}`}>List</button>
+          <button onClick={handleGridClick} aria-pressed={viewMode === 'grid'} className={`px-6 py-3 rounded-btn transition-all ${viewMode === 'grid' ? 'bg-accent text-accent-contrast' : 'text-muted hover:bg-surface-2'}`}>Grid</button>
+          <button onClick={handleListClick} aria-pressed={viewMode === 'list'} className={`px-6 py-3 rounded-btn transition-all ${viewMode === 'list' ? 'bg-accent text-accent-contrast' : 'text-muted hover:bg-surface-2'}`}>List</button>
         </div>
       </div>
 
@@ -58,7 +71,7 @@ export default function Videos() {
           {videos.map((video) => (
             <div key={video.id} className="bg-surface border border-line rounded-card overflow-hidden shadow-card hover:shadow-md transition-shadow">
               <div className="aspect-video">
-                <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${video.youtube_id}`} title={video.title} allowFullScreen className="w-full h-full" />
+                <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${video.youtube_id}`} title={video.title} loading="lazy" allowFullScreen className="w-full h-full" />
               </div>
               <div className={compact ? "p-5" : "p-8"}>
                 <div className="flex justify-between text-sm mb-3">
@@ -85,7 +98,7 @@ export default function Videos() {
             >
               {!compact && (
                 <div className="w-44 h-28 flex-shrink-0 rounded-2xl overflow-hidden">
-                  <img src={`https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg`} alt={video.title} className="w-full h-full object-cover" />
+                  <img src={`https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg`} alt={video.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
