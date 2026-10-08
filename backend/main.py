@@ -141,7 +141,12 @@ app.add_middleware(
         "https://timezoftoday.com",
         "http://localhost:5173",
         "http://localhost:5174",
+        # Stable preview of the `redesign` branch (Vercel project domain).
+        "https://timezoftoday-redesign.vercel.app",
     ],
+    # This project's own Vercel preview deployments (per-commit and per-branch
+    # URLs). Scoped to the profile-site project under this team only.
+    allow_origin_regex=r"https://profile-site-[a-z0-9-]+-jamariscott-2558s-projects\.vercel\.app",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
