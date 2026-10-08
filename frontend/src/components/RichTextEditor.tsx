@@ -4,6 +4,7 @@ import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useEffect, useRef, useState } from 'react';
+import { Image as ImageIcon, Link2, List, ListOrdered, Quote, Upload } from 'lucide-react';
 
 interface RichTextEditorProps {
   value: string;
@@ -118,34 +119,34 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
         {/* Lists */}
         <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet list">
-          • List
+          <span className="inline-flex items-center gap-1"><List size={15} aria-hidden /> List</span>
         </ToolbarBtn>
         <ToolbarBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Numbered list">
-          1. List
+          <span className="inline-flex items-center gap-1"><ListOrdered size={15} aria-hidden /> List</span>
         </ToolbarBtn>
 
         <div className="w-px h-5 bg-line mx-1" />
 
         {/* Blockquote */}
         <ToolbarBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Blockquote">
-          ❝
+          <Quote size={15} aria-label="Quote" />
         </ToolbarBtn>
 
         <div className="w-px h-5 bg-line mx-1" />
 
         {/* Link */}
         <ToolbarBtn onClick={() => { setShowLinkInput(!showLinkInput); setShowImageInput(false); }} active={editor.isActive('link')} title="Add link">
-          🔗 Link
+          <span className="inline-flex items-center gap-1"><Link2 size={15} aria-hidden /> Link</span>
         </ToolbarBtn>
 
         {/* Image from URL */}
         <ToolbarBtn onClick={() => { setShowImageInput(!showImageInput); setShowLinkInput(false); }} active={false} title="Add image from URL">
-          🖼 Image URL
+          <span className="inline-flex items-center gap-1"><ImageIcon size={15} aria-hidden /> Image link</span>
         </ToolbarBtn>
 
         {/* Image from device */}
         <ToolbarBtn onClick={() => fileInputRef.current?.click()} active={false} title="Upload image from device">
-          📁 Upload
+          <span className="inline-flex items-center gap-1"><Upload size={15} aria-hidden /> Upload image</span>
         </ToolbarBtn>
         <input
           ref={fileInputRef}
