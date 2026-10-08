@@ -1,6 +1,10 @@
-import { useEffect, useState } from 'react';
-import { API_BASE } from '../lib/config';
-import SiteNav from '../components/SiteNav';
+import { useEffect, useState } from "react";
+import { LayoutGrid, List } from "lucide-react";
+import { API_BASE } from "../lib/config";
+import { formatDate } from "../lib/format";
+import SiteNav from "../components/SiteNav";
+import SiteFooter from "../components/SiteFooter";
+import LiteYouTube from "../components/LiteYouTube";
 
 interface Video {
   id: number;
@@ -11,113 +15,132 @@ interface Video {
   duration: string;
 }
 
+type View = "grid" | "list";
+const VIEW_KEY = "tzt_videos_view";
+
+function readView(): View {
+  try {
+    return localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid";
+  } catch {
+    return "grid";
+  }
+}
+
+function Meta({ video }: { video: Video }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-sm text-subtle">
+      {video.date && <time dateTime={video.date}>{formatDate(video.date)}</time>}
+      {video.duration && <span>{video.duration}</span>}
+    </div>
+  );
+}
+
 export default function Videos() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [compact, setCompact] = useState(false);
+  const [videos, setVideos] = useState<Video[] | null>(null);
+  const [view, setView] = useState<View>(readView);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/videos`)
-      .then(res => res.json())
-      .then(data => {
-        setVideos(data);
-        setLoading(false);
-      })
-      .catch(err => { console.error(err); setLoading(false); });
+      .then((res) => res.json())
+      .then((data) => setVideos(Array.isArray(data) ? data : []))
+      .catch(() => setVideos([]));
   }, []);
 
-  const handleGridClick = () => {
-    if (viewMode === 'grid') setCompact(!compact);
-    else { setViewMode('grid'); setCompact(false); }
+  const choose = (v: View) => {
+    setView(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* preference just won't persist */
+    }
   };
 
-  const handleListClick = () => {
-    if (viewMode === 'list') setCompact(!compact);
-    else { setViewMode('list'); setCompact(false); }
-  };
-
-  if (loading) return (
-    <div className="bg-bg min-h-screen">
-      <SiteNav />
-      <div className="max-w-4xl mx-auto px-6 py-12 animate-pulse" aria-busy="true">
-        <h1 className="text-5xl font-bold text-text mb-10">Videos</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="aspect-video rounded-card bg-surface-2" />
-          ))}
-        </div>
-        <span className="sr-only">Loading videos…</span>
-      </div>
-    </div>
+  const [featured, ...rest] = videos ?? [];
+  const toggle = (v: View, label: string, Icon: typeof List) => (
+    <button
+      type="button"
+      onClick={() => choose(v)}
+      aria-pressed={view === v}
+      className={`inline-flex items-center gap-2 rounded-btn px-3.5 py-2 text-sm font-semibold transition-colors ${
+        view === v ? "bg-text text-bg" : "text-muted hover:text-text"
+      }`}
+    >
+      <Icon size={16} aria-hidden />
+      {label}
+    </button>
   );
 
   return (
-    <div className="bg-bg min-h-screen">
+    <div className="flex min-h-screen flex-col bg-bg text-text">
       <SiteNav />
-      <div className="max-w-4xl mx-auto px-6 py-12">
-      <div className="flex justify-between items-center mb-10">
-        <h1 className="text-5xl font-bold text-text">Videos</h1>
-
-        <div className="flex border border-line rounded-btn p-1 bg-surface shadow-card">
-          <button onClick={handleGridClick} aria-pressed={viewMode === 'grid'} className={`px-6 py-3 rounded-btn transition-all ${viewMode === 'grid' ? 'bg-accent text-accent-contrast' : 'text-muted hover:bg-surface-2'}`}>Grid</button>
-          <button onClick={handleListClick} aria-pressed={viewMode === 'list'} className={`px-6 py-3 rounded-btn transition-all ${viewMode === 'list' ? 'bg-accent text-accent-contrast' : 'text-muted hover:bg-surface-2'}`}>List</button>
-        </div>
-      </div>
-
-      {/* GRID VIEW */}
-      {viewMode === 'grid' && (
-        <div className={`grid ${compact ? 'grid-cols-1 md:grid-cols-3 gap-6' : 'grid-cols-1 md:grid-cols-2 gap-8'}`}>
-          {videos.map((video) => (
-            <div key={video.id} className="bg-surface border border-line rounded-card overflow-hidden shadow-card hover:shadow-md transition-shadow">
-              <div className="aspect-video">
-                <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${video.youtube_id}`} title={video.title} loading="lazy" allowFullScreen className="w-full h-full" />
-              </div>
-              <div className={compact ? "p-5" : "p-8"}>
-                <div className="flex justify-between text-sm mb-3">
-                  <span className="text-muted">{video.date}</span>
-                  <span className="text-subtle">{video.duration}</span>
-                </div>
-                <h2 className="text-xl font-semibold text-text mb-2">{video.title}</h2>
-                <p className="text-muted text-sm line-clamp-3">{video.description}</p>
-              </div>
+      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-20 pt-10 sm:px-6 md:pt-14">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-[clamp(2.5rem,6vw,4.25rem)] font-black leading-[0.95] tracking-tight [font-stretch:80%]">
+              Videos
+            </h1>
+            <p className="mt-3 max-w-xl text-lg text-muted">Watch the latest from Timez of Today.</p>
+          </div>
+          {videos && videos.length > 1 && (
+            <div role="group" aria-label="View" className="flex rounded-btn border border-line bg-surface p-1">
+              {toggle("grid", "Grid", LayoutGrid)}
+              {toggle("list", "List", List)}
             </div>
-          ))}
+          )}
         </div>
-      )}
 
-      {/* LIST VIEW */}
-      {viewMode === 'list' && (
-        <div className={compact ? "space-y-2" : "space-y-6"}>
-          {videos.map((video) => (
-            <div
-              key={video.id}
-              className={`flex gap-4 bg-surface border border-line rounded-card hover:shadow-md transition-shadow ${
-                compact ? 'p-3' : 'p-6'
-              }`}
-            >
-              {!compact && (
-                <div className="w-44 h-28 flex-shrink-0 rounded-2xl overflow-hidden">
-                  <img src={`https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg`} alt={video.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between text-xs text-muted mb-1">
-                  <span>{video.date}</span>
-                  <span>{video.duration}</span>
-                </div>
-                <h2 className={`font-semibold text-text ${compact ? 'text-base' : 'text-2xl'} mb-1`}>
-                  {video.title}
+        {videos === null ? (
+          <div className="mt-10 animate-pulse" aria-busy="true">
+            <div className="aspect-video w-full rounded-card bg-surface-2" />
+            <span className="sr-only">Loading videos…</span>
+          </div>
+        ) : !featured ? (
+          <p className="mt-10 text-muted">No videos yet. Check back soon.</p>
+        ) : view === "grid" ? (
+          <>
+            {/* The latest video, featured. */}
+            <section aria-label="Latest video" className="mt-10 grid gap-6 lg:grid-cols-[1.6fr_1fr] lg:items-center">
+              <LiteYouTube id={featured.youtube_id} title={featured.title} />
+              <div>
+                <Meta video={featured} />
+                <h2 className="mt-3 font-heading text-[clamp(1.9rem,3.6vw,3rem)] font-black leading-[1] tracking-tight [font-stretch:80%] [text-wrap:balance]">
+                  {featured.title}
                 </h2>
-                <p className={`text-muted ${compact ? 'text-xs line-clamp-2' : 'line-clamp-3'}`}>
-                  {video.description}
-                </p>
+                {featured.description && <p className="mt-4 line-clamp-4 text-muted">{featured.description}</p>}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-      </div>
+            </section>
+
+            {rest.length > 0 && (
+              <ul className="mt-14 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+                {rest.map((v) => (
+                  <li key={v.id}>
+                    <LiteYouTube id={v.youtube_id} title={v.title} />
+                    <div className="mt-3">
+                      <Meta video={v} />
+                      <h3 className="mt-1 text-lg font-bold leading-snug">{v.title}</h3>
+                      {v.description && <p className="mt-1 line-clamp-2 text-sm text-muted">{v.description}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <ul className="mt-10 divide-y divide-line border-y border-line">
+            {videos.map((v) => (
+              <li key={v.id} className="grid gap-5 py-6 sm:grid-cols-[18rem_1fr] sm:items-start">
+                <LiteYouTube id={v.youtube_id} title={v.title} />
+                <div className="min-w-0">
+                  <Meta video={v} />
+                  <h2 className="mt-1 font-heading text-2xl font-extrabold leading-tight tracking-tight [font-stretch:85%]">{v.title}</h2>
+                  {v.description && <p className="mt-2 line-clamp-3 max-w-[65ch] text-muted">{v.description}</p>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch, apiJson } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { formatDate } from "../lib/format";
+import { inputClass } from "./AuthFields";
 
 interface CommentItem {
   id: number;
@@ -41,65 +43,73 @@ export default function Comments({ slug }: { slug: string }) {
         body: JSON.stringify({ body }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to post comment");
+      if (!res.ok) throw new Error(data.detail || "Couldn't post your comment. Try again.");
       setBody("");
-      setNotice("Thanks! Your comment is awaiting approval.");
+      setNotice("Comment sent. It will appear once it's approved.");
     } catch (err: any) {
-      setError(err?.message || "Failed to post comment");
+      setError(err?.message || "Couldn't post your comment. Try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <section className="max-w-3xl mx-auto px-6 mt-16">
-      <h2 className="text-2xl font-bold text-text mb-6">Comments</h2>
+    <section aria-labelledby="comments-heading" className="mx-auto mt-16 max-w-3xl border-t border-line px-4 pt-10 sm:px-6">
+      <h2 id="comments-heading" className="font-heading text-3xl font-extrabold tracking-tight [font-stretch:85%]">
+        Comments{comments.length > 0 && <span className="ml-2 text-lg font-semibold text-subtle">{comments.length}</span>}
+      </h2>
 
       {comments.length === 0 ? (
-        <p className="text-muted text-sm mb-8">No comments yet. Be the first.</p>
+        <p className="mb-8 mt-3 text-muted">No comments yet. Start the conversation.</p>
       ) : (
-        <div className="space-y-5 mb-8">
+        <ul className="mb-10 mt-6 divide-y divide-line">
           {comments.map((c) => (
-            <div key={c.id} className="border-b border-line pb-5">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-text font-medium text-sm">{c.author}</span>
+            <li key={c.id} className="py-5">
+              <div className="mb-1 flex items-baseline gap-3">
+                <span className="font-semibold text-text">{c.author}</span>
                 {c.created_at && (
-                  <span className="text-subtle text-xs">
-                    {new Date(c.created_at).toLocaleDateString()}
-                  </span>
+                  <time dateTime={c.created_at} className="text-sm text-subtle">
+                    {formatDate(c.created_at)}
+                  </time>
                 )}
               </div>
-              <p className="text-text text-sm whitespace-pre-wrap">{c.body}</p>
-            </div>
+              <p className="whitespace-pre-wrap text-text">{c.body}</p>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {session ? (
-        <form onSubmit={submit}>
-          <label htmlFor="comment-body" className="sr-only">Your comment</label>
+        <form onSubmit={submit} className="mt-6">
+          <label htmlFor="comment-body" className="mb-1.5 block text-sm font-semibold text-text">
+            Add a comment
+          </label>
           <textarea
             id="comment-body"
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Add a comment…"
             rows={4}
-            className="border border-line bg-surface text-text p-3 w-full rounded-btn mb-3"
+            className={`${inputClass} mb-3`}
           />
-          {error && <p role="alert" className="text-danger text-sm mb-2">{error}</p>}
-          {notice && <p role="status" className="text-success text-sm mb-2">{notice}</p>}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-accent text-accent-contrast px-6 py-2.5 rounded-btn font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "Posting…" : "Post comment"}
-          </button>
-          <p className="text-subtle text-xs mt-2">Comments are reviewed before they appear.</p>
+          {error && <p role="alert" className="mb-2 text-sm font-medium text-danger">{error}</p>}
+          {notice && <p role="status" className="mb-2 text-sm font-medium text-success">{notice}</p>}
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-btn bg-accent px-6 py-3 font-semibold text-accent-contrast transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {submitting ? "Posting…" : "Post comment"}
+            </button>
+            <p className="text-sm text-subtle">Comments are reviewed before they appear.</p>
+          </div>
         </form>
       ) : (
-        <p className="text-muted text-sm">
-          <Link to="/login" className="text-accent hover:text-accent-hover font-medium">
+        <p className="mt-6 text-muted">
+          <Link
+            to={`/login?next=${encodeURIComponent(`/writing/${slug}`)}`}
+            className="font-semibold text-text underline decoration-highlight decoration-2 underline-offset-4"
+          >
             Log in
           </Link>{" "}
           to join the conversation.

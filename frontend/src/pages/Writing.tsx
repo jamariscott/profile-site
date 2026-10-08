@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { API_BASE } from '../lib/config';
-import SiteNav from '../components/SiteNav';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { API_BASE } from "../lib/config";
+import { formatDate } from "../lib/format";
+import SiteNav from "../components/SiteNav";
+import SiteFooter from "../components/SiteFooter";
 
 interface WritingPost {
   slug: string;
@@ -22,118 +24,105 @@ function extractThumbnail(post: WritingPost): string | null {
   return null;
 }
 
+function Meta({ post }: { post: WritingPost }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-sm text-subtle">
+      <time dateTime={post.date}>{formatDate(post.date)}</time>
+      {post.sponsor_logo && <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-muted">Sponsored</span>}
+    </div>
+  );
+}
+
 export default function Writing() {
-  const [posts, setPosts] = useState<WritingPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<WritingPost[] | null>(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/writing`)
-      .then(res => res.json())
-      .then(data => {
-        setPosts(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .then((res) => res.json())
+      .then((data) => setPosts(Array.isArray(data) ? data : []))
+      .catch(() => setPosts([]));
   }, []);
 
-  if (loading) return (
-    <div className="bg-bg min-h-screen">
-      <SiteNav />
-      <div className="max-w-5xl mx-auto px-6 py-12 animate-pulse" aria-busy="true">
-        <h1 className="text-5xl font-bold text-text mb-10">Writing</h1>
-        <div className="w-full h-80 rounded-2xl bg-surface-2 mb-6" />
-        <div className="h-3 w-24 rounded bg-surface-2 mb-3" />
-        <div className="h-9 w-3/4 rounded bg-surface-2 mb-3" />
-        <div className="h-4 w-1/2 rounded bg-surface-2" />
-        <span className="sr-only">Loading writing…</span>
-      </div>
-    </div>
-  );
-
-  if (posts.length === 0) return (
-    <div className="bg-bg min-h-screen">
-      <SiteNav />
-      <div className="max-w-5xl mx-auto px-6 py-12">
-        <h1 className="text-5xl font-bold text-text mb-10">Writing</h1>
-        <p className="text-muted">No posts yet.</p>
-      </div>
-    </div>
-  );
-
-  const [hero, ...rest] = posts;
-  const heroThumb = extractThumbnail(hero);
+  const [featured, ...rest] = posts ?? [];
+  const featuredThumb = featured ? extractThumbnail(featured) : null;
 
   return (
-    <div className="bg-bg min-h-screen">
+    <div className="flex min-h-screen flex-col bg-bg text-text">
       <SiteNav />
-      <div className="max-w-5xl mx-auto px-6 py-12">
-        <h1 className="text-5xl font-bold text-text mb-10">Writing</h1>
+      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-20 pt-10 sm:px-6 md:pt-14">
+        <h1 className="font-heading text-[clamp(2.5rem,6vw,4.25rem)] font-black leading-[0.95] tracking-tight [font-stretch:80%]">
+          Writing
+        </h1>
+        <p className="mt-3 max-w-xl text-lg text-muted">Stories, guides and news from Timez of Today.</p>
 
-        {/* Hero featured article */}
-        <Link to={`/writing/${hero.slug}`} className="block group mb-12">
-          {heroThumb && (
-            <div className="w-full h-80 rounded-2xl overflow-hidden mb-6">
-              <img
-                src={heroThumb}
-                alt={hero.title}
-                className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
-              />
+        {posts === null ? (
+          <div className="mt-10 grid animate-pulse gap-8 lg:grid-cols-[1.4fr_1fr]" aria-busy="true">
+            <div className="aspect-[16/10] rounded-card bg-surface-2" />
+            <div className="space-y-4">
+              <div className="h-4 w-32 rounded bg-surface-2" />
+              <div className="h-12 w-full rounded bg-surface-2" />
+              <div className="h-5 w-3/4 rounded bg-surface-2" />
             </div>
-          )}
-          <div className="flex items-center gap-3 mb-3">
-            {hero.sponsor_logo && (
-              <span className="text-xs font-semibold tracking-widest uppercase text-subtle border border-line px-2 py-0.5 rounded-full">
-                Sponsored
-              </span>
-            )}
-            <span className="text-sm text-muted">{hero.date}</span>
+            <span className="sr-only">Loading writing…</span>
           </div>
-          <h2 className="text-4xl font-bold text-text group-hover:text-muted transition-colors leading-tight mb-3">
-            {hero.title}
-          </h2>
-          <p className="text-muted text-lg line-clamp-3">{hero.summary}</p>
-        </Link>
-
-        {/* Divider */}
-        {rest.length > 0 && <hr className="border-line mb-10" />}
-
-        {/* 2-column card grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {rest.map((post) => {
-            const thumb = extractThumbnail(post);
-            return (
-              <Link key={post.slug} to={`/writing/${post.slug}`} className="block group">
-                {thumb && (
-                  <div className="w-full h-48 rounded-xl overflow-hidden mb-4">
-                    <img
-                      src={thumb}
-                      alt={post.title}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                )}
-                <div className="flex items-center gap-2 mb-2">
-                  {post.sponsor_logo && (
-                    <span className="text-xs font-semibold tracking-widest uppercase text-subtle border border-line px-2 py-0.5 rounded-full">
-                      Sponsored
-                    </span>
-                  )}
-                  <span className="text-xs text-muted">{post.date}</span>
+        ) : !featured ? (
+          <p className="mt-10 text-muted">Nothing published yet. Check back soon.</p>
+        ) : (
+          <>
+            {/* The latest story, featured. */}
+            <Link
+              to={`/writing/${featured.slug}`}
+              className={`group mt-10 grid items-center gap-8 ${featuredThumb ? "lg:grid-cols-[1.4fr_1fr]" : ""}`}
+            >
+              {featuredThumb && (
+                <div className="aspect-[16/10] overflow-hidden rounded-card bg-surface-2">
+                  <img
+                    src={featuredThumb}
+                    alt=""
+                    className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.03]"
+                  />
                 </div>
-                <h2 className="text-xl font-bold text-text group-hover:text-muted transition-colors leading-snug mb-2">
-                  {post.title}
+              )}
+              <div>
+                <Meta post={featured} />
+                <h2 className="mt-3 font-heading text-[clamp(2rem,4.2vw,3.5rem)] font-black leading-[0.98] tracking-tight [font-stretch:78%] [text-wrap:balance] group-hover:underline group-hover:decoration-highlight group-hover:decoration-4 group-hover:underline-offset-8">
+                  {featured.title}
                 </h2>
-                <p className="text-muted text-sm line-clamp-3">{post.summary}</p>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+                {featured.summary && <p className="mt-4 line-clamp-3 max-w-[60ch] text-lg text-muted">{featured.summary}</p>}
+                <span className="mt-5 inline-block font-semibold underline decoration-highlight decoration-2 underline-offset-4">Read the story</span>
+              </div>
+            </Link>
+
+            {/* Everything else, newest first. */}
+            {rest.length > 0 && (
+              <ul className="mt-16 divide-y divide-line border-y border-line">
+                {rest.map((post) => {
+                  const thumb = extractThumbnail(post);
+                  return (
+                    <li key={post.slug}>
+                      <Link to={`/writing/${post.slug}`} className="group grid gap-4 py-6 sm:grid-cols-[1fr_auto] sm:items-center sm:gap-8">
+                        <div className="min-w-0">
+                          <Meta post={post} />
+                          <h3 className="mt-2 font-heading text-2xl font-extrabold leading-tight tracking-tight [font-stretch:85%] group-hover:underline group-hover:decoration-highlight group-hover:decoration-2 group-hover:underline-offset-4">
+                            {post.title}
+                          </h3>
+                          {post.summary && <p className="mt-2 line-clamp-2 max-w-[65ch] text-muted">{post.summary}</p>}
+                        </div>
+                        {thumb && (
+                          <div className="aspect-[4/3] w-full overflow-hidden rounded-card bg-surface-2 sm:w-44">
+                            <img src={thumb} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                          </div>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
+        )}
+      </main>
+      <SiteFooter />
     </div>
   );
 }

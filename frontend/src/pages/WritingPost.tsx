@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { API_BASE } from '../lib/config';
-import SiteNav from '../components/SiteNav';
-import Comments from '../components/Comments';
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { API_BASE } from "../lib/config";
+import { formatDate } from "../lib/format";
+import SiteNav from "../components/SiteNav";
+import SiteFooter from "../components/SiteFooter";
+import ShareButton from "../components/ShareButton";
+import Comments from "../components/Comments";
 
 interface WritingPost {
   slug: string;
@@ -16,92 +20,102 @@ interface WritingPost {
 export default function WritingPost() {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<WritingPost | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<"loading" | "ok" | "missing">("loading");
 
   useEffect(() => {
     if (!slug) return;
+    setStatus("loading");
     fetch(`${API_BASE}/api/writing/${slug}`)
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => {
+        if (!data?.title) throw new Error();
         setPost(data);
-        setLoading(false);
+        setStatus("ok");
       })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .catch(() => setStatus("missing"));
   }, [slug]);
 
-  if (loading) return <div className="max-w-6xl mx-auto p-8">Loading post...</div>;
-  if (!post) return <div className="max-w-6xl mx-auto p-8">Post not found</div>;
-
-  const isSponsored = !!post.sponsor_logo;
-
   return (
-    <div className="bg-bg min-h-screen">
+    <div className="flex min-h-screen flex-col bg-bg text-text">
       <SiteNav />
-      <article className="pb-24">
-        {/* Header */}
-        <header className="max-w-3xl mx-auto px-6 mt-10 mb-8">
-          {/* Sponsored badge */}
-          {isSponsored && (
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-xs font-semibold tracking-widest uppercase text-subtle border border-line px-3 py-1 rounded-full">
-                Sponsored Content
-              </span>
-            </div>
-          )}
+      <main id="main" className="flex-1 pb-20">
+        <div className="mx-auto max-w-3xl px-4 pt-8 sm:px-6">
+          <Link to="/writing" className="inline-flex items-center gap-2 text-sm font-semibold text-muted hover:text-text">
+            <ArrowLeft size={16} aria-hidden />
+            All writing
+          </Link>
+        </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold text-text leading-tight mb-4">
-            {post.title}
-          </h1>
-          {post.summary && (
-            <p className="text-xl text-muted leading-relaxed mb-4">{post.summary}</p>
-          )}
-          <p className="text-sm text-subtle">{post.date}</p>
-        </header>
+        {status === "loading" && (
+          <div className="mx-auto max-w-3xl animate-pulse px-4 pt-10 sm:px-6" aria-busy="true">
+            <div className="h-4 w-40 rounded bg-surface-2" />
+            <div className="mt-4 h-14 w-full rounded bg-surface-2" />
+            <div className="mt-3 h-14 w-2/3 rounded bg-surface-2" />
+            <span className="sr-only">Loading story…</span>
+          </div>
+        )}
 
-        {/* Hero / sponsor image */}
-        {post.sponsor_logo && (
-          <div className="w-full mb-10" style={{ maxHeight: '520px', overflow: 'hidden' }}>
-            <img
-              src={post.sponsor_logo}
-              alt={post.title}
-              className="w-full object-cover"
-              style={{ maxHeight: '520px' }}
+        {status === "missing" && (
+          <div className="mx-auto max-w-3xl px-4 pt-10 sm:px-6">
+            <h1 className="font-heading text-4xl font-black tracking-tight [font-stretch:80%]">This story isn't here</h1>
+            <p className="mt-3 text-lg text-muted">It may have been moved or unpublished.</p>
+            <Link to="/writing" className="mt-6 inline-flex rounded-btn bg-accent px-5 py-3 font-semibold text-accent-contrast hover:bg-accent-hover">
+              See all writing
+            </Link>
+          </div>
+        )}
+
+        {status === "ok" && post && (
+          <article>
+            <header className="mx-auto max-w-3xl px-4 pt-8 sm:px-6">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-subtle">
+                <time dateTime={post.date}>{formatDate(post.date)}</time>
+                {post.sponsor_logo && (
+                  <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-muted">Sponsored content</span>
+                )}
+              </div>
+              <h1 className="mt-4 font-heading text-[clamp(2.4rem,6vw,4.5rem)] font-black leading-[0.95] tracking-tight [font-stretch:78%] [text-wrap:balance]">
+                {post.title}
+              </h1>
+              {post.summary && <p className="mt-5 text-xl leading-relaxed text-muted">{post.summary}</p>}
+              <div className="mt-6 flex items-center gap-3 border-y border-line py-3">
+                <ShareButton path={`/writing/${post.slug}`} displayName={post.title} label="Share this story" />
+              </div>
+            </header>
+
+            {post.sponsor_logo && (
+              <div className="mx-auto mt-10 max-w-5xl px-4 sm:px-6">
+                <img src={post.sponsor_logo} alt="" className="max-h-[560px] w-full rounded-card object-cover" />
+              </div>
+            )}
+
+            <div
+              className="prose prose-lg mx-auto mt-10 max-w-[68ch] px-4 sm:px-0
+                prose-headings:font-heading prose-headings:tracking-tight prose-p:leading-relaxed
+                prose-a:decoration-highlight prose-a:decoration-2 prose-a:underline-offset-4
+                prose-img:my-8 prose-img:w-full prose-img:rounded-card
+                prose-blockquote:border-l-4 prose-blockquote:font-normal prose-blockquote:not-italic
+                prose-code:rounded prose-code:bg-surface-2 prose-code:px-1"
+              dangerouslySetInnerHTML={{ __html: post.content }}
             />
-          </div>
+
+            {post.sponsor_logo && (
+              <div className="mx-auto mt-16 max-w-3xl px-4 sm:px-6">
+                <div className="flex items-center gap-6 border-t border-line pt-8">
+                  <img src={post.sponsor_logo} alt="Sponsor logo" className="h-12 w-auto rounded-lg object-contain" />
+                  <p className="text-sm leading-relaxed text-subtle">
+                    This story was created in partnership with a sponsor. Sponsored content is produced independently of
+                    editorial staff.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <Comments slug={post.slug} />
+          </article>
         )}
-
-        {/* Article body */}
-        <div
-          className="max-w-3xl mx-auto px-6 prose prose-lg max-w-none
-            prose-headings:font-bold prose-p:leading-relaxed
-            prose-a:no-underline hover:prose-a:underline
-            prose-img:rounded-2xl prose-img:shadow-md prose-img:my-8 prose-img:w-full
-            prose-blockquote:border-l-4 prose-blockquote:italic
-            prose-code:bg-surface-2 prose-code:rounded prose-code:px-1"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
-
-        {/* Sponsor attribution footer */}
-        {isSponsored && (
-          <div className="max-w-3xl mx-auto px-6 mt-16">
-            <div className="border-t border-line pt-8 flex items-center gap-6">
-              <img
-                src={post.sponsor_logo}
-                alt="Sponsor"
-                className="h-12 w-auto object-contain rounded-lg"
-              />
-              <p className="text-sm text-subtle leading-relaxed">
-                This article was created in partnership with our sponsor. Sponsored content is produced independently of editorial staff.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <Comments slug={post.slug} />
-      </article>
+      </main>
+      <SiteFooter />
     </div>
   );
 }

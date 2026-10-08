@@ -5,6 +5,7 @@ import SiteFooter from "../components/SiteFooter";
 import { API_BASE } from "../lib/config";
 import { useAuth } from "../lib/auth";
 import { THEMES } from "../lib/themes";
+import { formatDate } from "../lib/format";
 
 interface Member {
   username: string;
@@ -39,13 +40,6 @@ const ROW_STYLES = [
 ];
 
 const USERNAME_ALLOWED = /[^a-z0-9_.-]/g;
-
-function formatDate(value: string): string {
-  const d = new Date(value);
-  return Number.isNaN(d.getTime())
-    ? value
-    : d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
-}
 
 type Availability = "idle" | "short" | "checking" | "available" | "taken" | "error";
 
