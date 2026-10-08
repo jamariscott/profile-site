@@ -17,6 +17,14 @@ if not DATABASE_URL:
     DATABASE_URL = "sqlite:///./local_dev.db"
     print("[database] No DATABASE_URL set — using local SQLite (local_dev.db) for dev.")
 
+# Pin the Postgres driver to psycopg2 (the one in requirements.txt). SQLAlchemy
+# 2.1+ maps a bare postgresql:// URL to psycopg 3, which isn't installed, so the
+# service crashed on boot. Render may also hand out the legacy postgres:// scheme.
+for prefix in ("postgres://", "postgresql://"):
+    if DATABASE_URL.startswith(prefix):
+        DATABASE_URL = "postgresql+psycopg2://" + DATABASE_URL[len(prefix):]
+        break
+
 # SQLite needs this flag for FastAPI's threaded request handling; Postgres doesn't.
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(DATABASE_URL, echo=False, connect_args=connect_args)
