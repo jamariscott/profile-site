@@ -86,6 +86,7 @@ class User(Base):
     profile_public = Column(Boolean, nullable=False, default=True)
     profile_theme = Column(String, nullable=True)   # theme id for this profile's page
     profile_layout = Column(Text, nullable=True)    # JSON: ordered section visibility
+    profile_style = Column(Text, nullable=True)     # JSON: owner customization (accent, font, header...)
     genres = Column(String, nullable=True)          # comma-separated genre tags (music)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, default=func.now())

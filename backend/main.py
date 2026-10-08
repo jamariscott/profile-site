@@ -59,6 +59,7 @@ def ensure_columns():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_theme VARCHAR",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_layout TEXT",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS genres VARCHAR",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_style TEXT",
         "ALTER TABLE projects ADD COLUMN IF NOT EXISTS user_id INTEGER",
         "ALTER TABLE links ADD COLUMN IF NOT EXISTS user_id INTEGER",
     ]
@@ -216,6 +217,47 @@ def get_layout(user: User) -> list:
     return DEFAULT_LAYOUT
 
 
+# Owner customization for their public profile. Every key is optional and
+# whitelisted, because the values end up in CSS on the profile page.
+STYLE_CHOICES = {
+    "mode": {"light", "dark"},
+    "font": {"sans", "serif", "grotesk", "mono"},
+    "header": {"classic", "bigname", "cover"},
+    "buttons": {"rounded", "pill", "square"},
+}
+STYLE_TEXT_LIMITS = {"status": 80, "location": 60}
+HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def clean_style(raw) -> dict:
+    if not isinstance(raw, dict):
+        return {}
+    style = {}
+    for key, allowed in STYLE_CHOICES.items():
+        if raw.get(key) in allowed:
+            style[key] = raw[key]
+    accent = raw.get("accent")
+    if isinstance(accent, str) and HEX_COLOR.match(accent):
+        style["accent"] = accent.lower()
+    cover = raw.get("cover_url")
+    if isinstance(cover, str) and cover.startswith(("https://", "http://")) and len(cover) <= 1000:
+        style["cover_url"] = cover
+    for key, limit in STYLE_TEXT_LIMITS.items():
+        val = raw.get(key)
+        if isinstance(val, str) and val.strip():
+            style[key] = val.strip()[:limit]
+    return style
+
+
+def get_style(user: User) -> dict:
+    if user.profile_style:
+        try:
+            return clean_style(json.loads(user.profile_style))
+        except Exception:
+            pass
+    return {}
+
+
 def display_name(user: User) -> str:
     full = f"{(user.first_name or '').strip()} {(user.last_name or '').strip()}".strip()
     return full or user.username
@@ -239,6 +281,7 @@ def profile_payload(user: User, db: Session) -> dict:
         "theme": user.profile_theme,
         "is_public": user.profile_public,
         "layout": get_layout(user),
+        "style": get_style(user),
         "genres": genres_list(user),
         "projects": [project_dict(p) for p in projects],
         "links": [link_dict(l) for l in links],
@@ -320,6 +363,7 @@ async def discover(profession: str = "", db: Session = Depends(get_db)):
             "headline": u.headline,
             "avatar_url": u.avatar_url,
             "theme": u.profile_theme,
+            "style": get_style(u),
             "genres": genres_list(u),
         }
         for u in users
@@ -752,6 +796,9 @@ async def update_my_profile(data: dict, user: User = Depends(get_current_user), 
         user.profile_theme = theme if theme in VALID_THEMES else None
     if "layout" in data and isinstance(data.get("layout"), list):
         user.profile_layout = json.dumps(data["layout"])
+    if "style" in data:
+        style = clean_style(data.get("style"))
+        user.profile_style = json.dumps(style) if style else None
     if "genres" in data:
         g = data.get("genres")
         if isinstance(g, list):
