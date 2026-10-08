@@ -12,7 +12,9 @@ from io import BytesIO
 
 from database import SessionLocal, engine, Base, get_db
 from models import Profile, Project, Link, Video, Writing, Admin, Setting, User, Comment, Track, Release, Show, Photo, Clip, Post
-from images import clean_image, decode_image, image_url, is_served_image_url
+from images import (
+    clean_image, decode_image, html_image_at, image_url, is_served_image_url, rewrite_html_images,
+)
 from auth import (
     hash_password,
     verify_password,
@@ -382,7 +384,7 @@ async def get_writing(request: Request, db: Session = Depends(get_db)):
         "title": p.title,
         "date": p.date.isoformat() if p.date else None,
         "summary": p.summary or "",
-        "content": p.content,
+        "content": rewrite_html_images(request, p.id, p.content),
         "sponsor_logo": image_url(request, "sponsor", p.id, p.sponsor_logo),
         "x_posted": p.x_posted
     } for p in posts]
@@ -397,7 +399,7 @@ async def get_writing_post(slug: str, request: Request, db: Session = Depends(ge
         "title": post.title,
         "date": post.date.isoformat() if post.date else None,
         "summary": post.summary or "",
-        "content": post.content,
+        "content": rewrite_html_images(request, post.id, post.content),
         "sponsor_logo": image_url(request, "sponsor", post.id, post.sponsor_logo),
     }
 
@@ -420,7 +422,17 @@ async def get_image(kind: str, key: int, token: str, db: Session = Depends(get_d
         raise HTTPException(404, "Image not found")
     model, column = source
     row = db.query(model).filter(model.id == key).first()
-    body, mime = decode_image(getattr(row, column, None) if row else None, token)
+    return image_response(*decode_image(getattr(row, column, None) if row else None, token))
+
+
+@app.get("/api/img/article/{post_id}/{index}/{token}")
+async def get_article_image(post_id: int, index: int, token: str, db: Session = Depends(get_db)):
+    """Serve the index-th embedded (data-URI) image of an article's HTML."""
+    post = db.query(Writing).filter(Writing.id == post_id).first()
+    return image_response(*decode_image(html_image_at(post.content if post else None, index), token))
+
+
+def image_response(body: bytes, mime: str) -> Response:
     return Response(content=body, media_type=mime, headers={
         "Cache-Control": "public, max-age=31536000, immutable",
         "X-Content-Type-Options": "nosniff",

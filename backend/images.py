@@ -73,6 +73,36 @@ def is_served_image_url(value) -> bool:
     return bool(value) and "/api/img/" in value and value.startswith(("https://", "http://"))
 
 
+# <img src="data:..."> inside rich-text article HTML (the editor embeds uploads).
+HTML_DATA_IMG = re.compile(r"""(<img\b[^>]*?\bsrc\s*=\s*)(["'])(data:image/[^"']+)\2""", re.IGNORECASE)
+
+
+def rewrite_html_images(request, post_id: int, html):
+    """Swap each data-URI <img> in article HTML for an /api/img/article URL.
+    Images are addressed by their position among the data-URI images."""
+    if request is None or not html or "data:image/" not in html:
+        return html
+    base = api_base(request)
+    counter = iter(range(1_000_000))
+
+    def swap(m):
+        index, uri = next(counter), m.group(3)
+        if not parse_data_uri(uri):
+            return m.group(0)
+        url = f"{base}/api/img/article/{post_id}/{index}/{image_token(uri)}"
+        return f"{m.group(1)}{m.group(2)}{url}{m.group(2)}"
+
+    return HTML_DATA_IMG.sub(swap, html)
+
+
+def html_image_at(html, index: int):
+    """The data URI of the index-th data-URI <img> in article HTML, or None."""
+    for i, m in enumerate(HTML_DATA_IMG.finditer(html or "")):
+        if i == index:
+            return m.group(3)
+    return None
+
+
 def decode_image(value, token: str):
     """(bytes, mime) for a stored data-URI image whose hash matches token, else 404."""
     parsed = parse_data_uri(value)
