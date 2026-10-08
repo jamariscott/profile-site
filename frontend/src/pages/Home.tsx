@@ -6,6 +6,8 @@ import { API_BASE } from "../lib/config";
 import { useAuth } from "../lib/auth";
 import { THEMES } from "../lib/themes";
 import { formatDate } from "../lib/format";
+import * as m from "motion/react-m";
+import { spring } from "../lib/motion";
 
 interface Member {
   username: string;
@@ -177,10 +179,20 @@ function LineupPoster({ members, yourName }: { members: Member[] | null; yourNam
         ))}
 
         <li className="pt-2">
+          {/* Your name joins the lineup: when you start typing, it springs in
+              (the key changes once, so later keystrokes don't re-animate). */}
           <span
-            className={`inline-block max-w-full rounded-[0.35rem] bg-highlight px-3 py-1 font-heading text-on-highlight ${ROW_STYLES[2]}`}
+            className={`inline-block max-w-full overflow-hidden rounded-[0.35rem] bg-highlight px-3 py-1 align-bottom font-heading text-on-highlight ${ROW_STYLES[2]}`}
           >
-            {yourName || "Your name here"}
+            <m.span
+              key={yourName ? "named" : "placeholder"}
+              className="inline-block"
+              initial={yourName ? { y: 18, opacity: 0, scale: 0.92 } : false}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              transition={spring}
+            >
+              {yourName || "Your name here"}
+            </m.span>
           </span>
         </li>
       </ol>

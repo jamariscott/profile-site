@@ -34,6 +34,9 @@ import { inputClass } from "../components/AuthFields";
 import { compressAndResizeImage } from "../lib/upload";
 import { ALL_SECTION_TYPES, presetFor } from "../lib/professions";
 import { formatDate } from "../lib/format";
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
+import { fade, fadeOut, spring, springSoft } from "../lib/motion";
 
 interface MyComment {
   id: number;
@@ -547,7 +550,12 @@ export default function Account() {
                 </span>
               </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2" aria-hidden>
-                <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${(doneCount / checklist.length) * 100}%` }} />
+                <m.div
+                  className="h-full origin-left rounded-full bg-accent"
+                  initial={false}
+                  animate={{ width: `${(doneCount / checklist.length) * 100}%` }}
+                  transition={springSoft}
+                />
               </div>
               <ul className="mt-4 grid gap-1 sm:grid-cols-2">
                 {checklist.map((c) => (
@@ -558,7 +566,19 @@ export default function Account() {
                       disabled={c.done}
                       className="flex w-full items-center gap-2.5 rounded-btn px-2 py-2 text-left text-sm font-medium hover:bg-surface-2 disabled:hover:bg-transparent"
                     >
-                      {c.done ? <CheckCircle2 size={18} className="text-success" aria-hidden /> : <Circle size={18} className="text-subtle" aria-hidden />}
+                      {/* A finished item's check pops in. */}
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        <m.span
+                          key={c.done ? "done" : "todo"}
+                          className="inline-flex"
+                          initial={{ scale: 0.4, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ opacity: 0, transition: fadeOut }}
+                          transition={spring}
+                        >
+                          {c.done ? <CheckCircle2 size={18} className="text-success" aria-hidden /> : <Circle size={18} className="text-subtle" aria-hidden />}
+                        </m.span>
+                      </AnimatePresence>
                       <span className={c.done ? "text-muted line-through" : ""}>{c.label}</span>
                       <span className="sr-only">{c.done ? "(done)" : "(to do)"}</span>
                     </button>
@@ -568,6 +588,9 @@ export default function Account() {
             </Card>
           )}
 
+          {/* Switching sections cross-fades the panel. */}
+          <AnimatePresence mode="wait" initial={false}>
+          <m.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, transition: fadeOut }} transition={fade}>
           <h1 className="font-heading text-3xl font-black tracking-tight [font-stretch:85%] sm:text-4xl">{title}</h1>
           <p className="mb-6 mt-1 text-muted">{hint}</p>
 
@@ -893,6 +916,8 @@ export default function Account() {
               </button>
             </div>
           )}
+          </m.div>
+          </AnimatePresence>
         </main>
 
         {/* Live preview, alongside the editor on wide screens */}
@@ -909,9 +934,17 @@ export default function Account() {
         </aside>
       </div>
 
-      {/* Save bar: appears when profile or appearance edits are unsaved. */}
+      {/* Save bar: slides up when profile or appearance edits are unsaved. */}
+      <AnimatePresence>
       {(dirty || profNotice || profError) && usesProfileSave && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur">
+        <m.div
+          key="save-bar"
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%", transition: fadeOut }}
+          transition={springSoft}
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur"
+        >
           <div className="mx-auto flex max-w-[90rem] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <p role="status" aria-live="polite" className={`text-sm font-medium ${profError ? "text-danger" : dirty ? "text-text" : "text-success"}`}>
               {profError || (dirty ? "You have unsaved changes." : profNotice)}
@@ -927,8 +960,9 @@ export default function Account() {
               </div>
             )}
           </div>
-        </div>
+        </m.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

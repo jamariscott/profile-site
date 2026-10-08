@@ -1,5 +1,8 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, XCircle, Info, X } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
+import { fadeOut, spring } from "../lib/motion";
 
 type ToastVariant = "success" | "error" | "info";
 interface ToastItem { id: number; message: string; variant: ToastVariant; }
@@ -43,21 +46,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div role="status" aria-live="polite" className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 items-end pointer-events-none">
-        {toasts.map((t) => {
-          const style = VARIANT_STYLES[t.variant];
-          return (
-            <div
-              key={t.id}
-              onClick={() => dismiss(t.id)}
-              style={{ animation: "toast-in 0.2s ease-out" }}
-              className={`pointer-events-auto flex items-start gap-2.5 max-w-sm w-full sm:w-auto px-4 py-3 rounded-btn border ${style.border} bg-surface text-text shadow-card text-sm cursor-pointer`}
-            >
-              {style.icon}
-              <span className="flex-1 whitespace-pre-wrap">{t.message}</span>
-              <X size={16} className="text-subtle shrink-0 mt-0.5" aria-hidden />
-            </div>
-          );
-        })}
+        {/* Toasts slide in from the right; the stack closes up as they leave. */}
+        <AnimatePresence initial={false}>
+          {toasts.map((t) => {
+            const style = VARIANT_STYLES[t.variant];
+            return (
+              <m.div
+                key={t.id}
+                layout
+                onClick={() => dismiss(t.id)}
+                initial={{ opacity: 0, x: 32 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 32, transition: fadeOut }}
+                transition={spring}
+                className={`pointer-events-auto flex items-start gap-2.5 max-w-sm w-full sm:w-auto px-4 py-3 rounded-btn border ${style.border} bg-surface text-text shadow-card text-sm cursor-pointer`}
+              >
+                {style.icon}
+                <span className="flex-1 whitespace-pre-wrap">{t.message}</span>
+                <X size={16} className="text-subtle shrink-0 mt-0.5" aria-hidden />
+              </m.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );

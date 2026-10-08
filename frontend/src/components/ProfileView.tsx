@@ -6,6 +6,9 @@ import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
 import ShareButton from "./ShareButton";
 import type { ProfileStyle } from "./ProfileFrame";
 import { coverFor } from "../lib/covers";
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
+import { fade, fadeOut, springSoft } from "../lib/motion";
 import {
   GitHubIcon,
   SpotifyIcon,
@@ -283,12 +286,15 @@ export default function ProfileView({
                 aria-label={ph.caption ? `View photo: ${ph.caption}` : "View photo"}
                 className="group aspect-square cursor-zoom-in overflow-hidden rounded-card border border-line bg-surface-2"
               >
-                <img
-                  src={ph.image_url}
-                  alt={ph.caption || ""}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
-                />
+                {/* Shared with the lightbox: the photo grows out of this tile. */}
+                <m.div layoutId={`photo-${ph.id}`} transition={springSoft} className="h-full w-full overflow-hidden">
+                  <img
+                    src={ph.image_url}
+                    alt={ph.caption || ""}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
+                  />
+                </m.div>
               </button>
             ))}
           </div>
@@ -463,20 +469,29 @@ export default function ProfileView({
         </p>
       )}
 
-      {lightbox && (
-        <div
-          onClick={closeLightbox}
-          role="dialog"
-          aria-modal="true"
-          aria-label={lightbox.caption || "Photo"}
-          className="on-dark fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center bg-black/85 p-4"
-        >
-          <img src={lightbox.image_url} alt={lightbox.caption || ""} className="max-h-full max-w-full rounded-card object-contain" />
-          <button type="button" onClick={closeLightbox} aria-label="Close" className="absolute right-5 top-5 text-white/80 hover:text-white" autoFocus>
-            <X size={28} aria-hidden />
-          </button>
-        </div>
-      )}
+      <AnimatePresence>
+        {lightbox && (
+          <m.div
+            key="lightbox"
+            onClick={closeLightbox}
+            role="dialog"
+            aria-modal="true"
+            aria-label={lightbox.caption || "Photo"}
+            initial={{ backgroundColor: "rgba(0,0,0,0)" }}
+            animate={{ backgroundColor: "rgba(0,0,0,0.85)" }}
+            exit={{ backgroundColor: "rgba(0,0,0,0)", transition: fadeOut }}
+            transition={fade}
+            className="on-dark fixed inset-0 z-50 flex cursor-zoom-out items-center justify-center p-4"
+          >
+            <m.div layoutId={`photo-${lightbox.id}`} transition={springSoft} className="flex max-h-full max-w-full overflow-hidden rounded-card">
+              <img src={lightbox.image_url} alt={lightbox.caption || ""} className="max-h-[calc(100vh-2rem)] max-w-full object-contain" />
+            </m.div>
+            <button type="button" onClick={closeLightbox} aria-label="Close" className="absolute right-5 top-5 text-white/80 hover:text-white" autoFocus>
+              <X size={28} aria-hidden />
+            </button>
+          </m.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

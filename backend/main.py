@@ -201,7 +201,7 @@ def genres_list(user: User) -> list:
 
 
 # Default profile section layout (toggle + reorder a known set).
-DEFAULT_LAYOUT = [
+DEFAULT_PROFILE_LAYOUT = [
     {"type": "about", "visible": True},
     {"type": "projects", "visible": True},
     {"type": "links", "visible": True},
@@ -216,7 +216,7 @@ def get_layout(user: User) -> list:
                 return parsed
         except Exception:
             pass
-    return DEFAULT_LAYOUT
+    return DEFAULT_PROFILE_LAYOUT
 
 
 # Owner customization for their public profile. Every key is optional and

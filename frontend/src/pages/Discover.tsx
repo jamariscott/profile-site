@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Shuffle } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
+import { fadeOut, springSoft } from "../lib/motion";
 import SiteNav from "../components/SiteNav";
 import SiteFooter from "../components/SiteFooter";
 import { apiJson } from "../lib/api";
@@ -78,6 +81,15 @@ function ProfileCard({ p }: { p: DiscoverProfile }) {
   const color = memberColor(p);
   const label = p.theme ? THEME_META[p.theme]?.label : undefined;
   return (
+    // Cards slide to their new spot when filters change, and fade in/out.
+    <m.div
+      layout="position"
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.97, transition: fadeOut }}
+      transition={springSoft}
+      className="h-full"
+    >
     <Link
       to={`/u/${p.username}`}
       className="group flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface transition-colors hover:border-line-strong"
@@ -109,6 +121,7 @@ function ProfileCard({ p }: { p: DiscoverProfile }) {
         )}
       </div>
     </Link>
+    </m.div>
   );
 }
 
@@ -127,7 +140,8 @@ function CardSkeleton() {
   );
 }
 
-const grid = "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4";
+// relative: AnimatePresence "popLayout" positions leaving cards against the grid.
+const grid = "relative grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4";
 
 export default function Discover() {
   const navigate = useNavigate();
@@ -287,9 +301,11 @@ export default function Discover() {
                 {shown.length} {shown.length === 1 ? "person" : "people"}
               </p>
               <div className={grid}>
-                {shown.map((p) => (
-                  <ProfileCard key={p.username} p={p} />
-                ))}
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {shown.map((p) => (
+                    <ProfileCard key={p.username} p={p} />
+                  ))}
+                </AnimatePresence>
               </div>
             </>
           )}

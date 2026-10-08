@@ -1,6 +1,9 @@
 import { useCallback, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Menu, Search, X } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import * as m from "motion/react-m";
+import { fade, fadeOut, springSoft } from "../lib/motion";
 import { useAuth } from "../lib/auth";
 import { useEscapeKey } from "../lib/useEscapeKey";
 import DarkModeToggle from "./DarkModeToggle";
@@ -31,6 +34,7 @@ export default function PlatformNav() {
     : { to: "/register", label: "Claim your page" };
 
   return (
+    <>
     <header className="sticky top-0 z-40 border-b border-line bg-bg/90 backdrop-blur supports-[backdrop-filter]:bg-bg/75">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
         <Link to="/" aria-label="Timez of Today home" className="shrink-0">
@@ -81,10 +85,28 @@ export default function PlatformNav() {
         </div>
       </div>
 
+    </header>
+
+    {/* Rendered outside <header>: its backdrop blur would otherwise trap this
+        fixed overlay inside the header's box. Slides in from the right. */}
+    <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-          <div className="absolute inset-0 bg-text/40" onClick={close} />
-          <div className="absolute inset-y-0 right-0 flex w-[min(20rem,85vw)] flex-col bg-bg p-5 shadow-xl">
+        <div key="menu" className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <m.div
+            className="absolute inset-0 bg-text/40"
+            onClick={close}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: fadeOut }}
+            transition={fade}
+          />
+          <m.div
+            className="absolute inset-y-0 right-0 flex w-[min(20rem,85vw)] flex-col bg-bg p-5 shadow-xl"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%", transition: fadeOut }}
+            transition={springSoft}
+          >
             <button
               type="button"
               onClick={close}
@@ -108,9 +130,10 @@ export default function PlatformNav() {
             >
               {primary.label}
             </Link>
-          </div>
+          </m.div>
         </div>
       )}
-    </header>
+    </AnimatePresence>
+    </>
   );
 }
