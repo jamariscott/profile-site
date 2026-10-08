@@ -87,7 +87,7 @@ export default function Search() {
                     <li key={p.username}>
                       <Link to={`/u/${p.username}`} className={row}>
                         {p.avatar_url ? (
-                          <img src={p.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
+                          <img src={p.avatar_url} alt="" width={44} height={44} loading="lazy" decoding="async" className="h-11 w-11 shrink-0 rounded-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
                         ) : (
                           <div aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-highlight font-bold text-on-highlight">
                             {name.charAt(0).toUpperCase()}
