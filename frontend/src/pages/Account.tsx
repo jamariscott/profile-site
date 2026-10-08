@@ -106,6 +106,12 @@ const TAB_TITLE: Record<Tab, { title: string; hint: string }> = {
   settings: { title: "Settings", hint: "Your account, password and comments." },
 };
 
+/** "local-test-story" -> "Local test story" (comments only carry the story's address). */
+const storyTitle = (slug: string) => {
+  const s = slug.replace(/[-_]+/g, " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
 function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={`rounded-card border border-line bg-surface p-5 sm:p-6 ${className}`}>{children}</div>;
 }
@@ -700,7 +706,7 @@ export default function Account() {
           {/* APPEARANCE */}
           {tab === "appearance" && (
             <Card>
-              <AppearanceEditor style={style} onChange={edit(setStyle)} />
+              <AppearanceEditor style={style} onChange={edit(setStyle)} profession={profileTheme} />
             </Card>
           )}
 
@@ -868,7 +874,7 @@ export default function Account() {
                       <li key={c.id} className="rounded-btn border border-line p-4">
                         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                           <Link to={`/writing/${c.writing_slug}`} className="truncate text-sm font-semibold underline decoration-highlight decoration-2 underline-offset-4">
-                            {c.writing_slug}
+                            {storyTitle(c.writing_slug)}
                           </Link>
                           <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${c.status === "approved" ? "bg-success/15 text-success" : "bg-surface-2 text-muted"}`}>
                             {c.status === "approved" ? "Published" : "Waiting for review"}

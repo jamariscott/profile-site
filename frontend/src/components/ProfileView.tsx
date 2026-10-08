@@ -5,6 +5,7 @@ import { useEscapeKey } from "../lib/useEscapeKey";
 import TrackEmbed, { resolveEmbed } from "./TrackEmbed";
 import ShareButton from "./ShareButton";
 import type { ProfileStyle } from "./ProfileFrame";
+import { coverFor } from "../lib/covers";
 import {
   GitHubIcon,
   SpotifyIcon,
@@ -144,6 +145,7 @@ export default function ProfileView({
 }) {
   const style = profile.style ?? {};
   const header = style.header ?? "classic";
+  const coverCredit = coverFor(style.cover_url);
   const sections = (profile.layout || []).filter((s) => s.visible && hasContent(profile, s.type));
   const [lightbox, setLightbox] = useState<ProfilePhoto | null>(null);
   const closeLightbox = useCallback(() => setLightbox(null), []);
@@ -360,8 +362,18 @@ export default function ProfileView({
       {/* Header: classic (photo beside name), big name, or cover image. */}
       <header className="pb-8">
         {header === "cover" && (
-          <div className="mb-[-3rem] aspect-[3/1] w-full overflow-hidden rounded-card bg-accent sm:mb-[-4rem]">
+          <div className="relative mb-[-3rem] aspect-[3/1] w-full overflow-hidden rounded-card bg-accent sm:mb-[-4rem]">
             {style.cover_url && <img src={style.cover_url} alt="" className="h-full w-full object-cover" />}
+            {coverCredit && (
+              <a
+                href={coverCredit.page}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute bottom-2 right-2 rounded bg-black/55 px-2 py-0.5 text-[11px] text-white/90 hover:text-white"
+              >
+                Photo: {coverCredit.photographer} / Pexels
+              </a>
+            )}
           </div>
         )}
 
@@ -380,9 +392,9 @@ export default function ProfileView({
             {genres}
           </div>
         ) : (
-          <div className={header === "cover" ? "px-4 sm:px-6" : ""}>
+          <div className={header === "cover" ? "relative z-10 px-4 sm:px-6" : ""}>
             <div className="flex items-end justify-between gap-4">
-              <Avatar profile={profile} size={header === "cover" ? "h-24 w-24 sm:h-32 sm:w-32" : "h-20 w-20 sm:h-24 sm:w-24"} />
+              <Avatar profile={profile} size={embedded ? "h-20 w-20" : header === "cover" ? "h-24 w-24 sm:h-32 sm:w-32" : "h-20 w-20 sm:h-24 sm:w-24"} />
               <div className={header === "cover" ? "pb-2" : ""}>{share}</div>
             </div>
             <h1 className="mt-5 break-words font-heading text-4xl font-bold leading-tight tracking-tight text-text sm:text-5xl">{name}</h1>

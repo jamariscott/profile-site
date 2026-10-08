@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Check } from "lucide-react";
 import type { ProfileStyle } from "./ProfileFrame";
 import { inputClass } from "./AuthFields";
+import { COVERS, coverFor, coverThumb, coverUrl } from "../lib/covers";
 
 // Curated accents: each works as a button fill in light and dark (ProfileFrame
 // picks white or ink text for whichever reads better on it).
@@ -80,9 +81,12 @@ function HeaderSketch({ kind }: { kind: "classic" | "bigname" | "cover" }) {
 export default function AppearanceEditor({
   style,
   onChange,
+  profession = "",
 }: {
   style: ProfileStyle;
   onChange: (next: ProfileStyle) => void;
+  /** The member's profession theme id, so its covers are offered first. */
+  profession?: string;
 }) {
   const set = <K extends keyof ProfileStyle>(key: K, value: ProfileStyle[K] | undefined) => {
     const next = { ...style };
@@ -91,6 +95,10 @@ export default function AppearanceEditor({
     onChange(next);
   };
   const header = style.header ?? "classic";
+  const selectedCover = coverFor(style.cover_url);
+  // This member's profession first, then the general covers, then the rest.
+  const rank = (c: { for: string }) => (c.for === profession ? 0 : c.for === "any" ? 1 : 2);
+  const covers = [...COVERS].sort((a, b) => rank(a) - rank(b));
 
   return (
     <div className="space-y-8">
@@ -103,20 +111,53 @@ export default function AppearanceEditor({
           ))}
         </div>
         {header === "cover" && (
-          <div className="mt-4">
-            <label htmlFor="cover-url" className="mb-1.5 block text-sm font-semibold">
-              Cover image link
+          <div className="mt-5">
+            <p className="text-sm font-semibold">Cover image</p>
+            <p className="mt-0.5 text-sm text-muted">Pick one, paste your own link, or leave it empty to use your accent color.</p>
+            <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {covers.map((c) => {
+                const active = selectedCover?.id === c.id;
+                return (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      onClick={() => set("cover_url", active ? undefined : coverUrl(c.id))}
+                      aria-pressed={active}
+                      aria-label={c.alt}
+                      title={`${c.alt}. Photo by ${c.photographer}`}
+                      className={`relative block w-full overflow-hidden rounded-[0.5rem] ring-offset-2 ring-offset-bg ${active ? "ring-2 ring-text" : "hover:opacity-90"}`}
+                    >
+                      <img src={coverThumb(c.id)} alt="" loading="lazy" className="aspect-[3/1] w-full object-cover" />
+                      {active && (
+                        <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-text text-bg">
+                          <Check size={14} aria-hidden />
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-2 text-xs text-subtle">
+              Photos from{" "}
+              <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline">
+                Pexels
+              </a>
+              . Your page credits the photographer.
+            </p>
+            <label htmlFor="cover-url" className="mb-1.5 mt-4 block text-sm font-semibold">
+              Or paste a link to your own image
             </label>
             <input
               id="cover-url"
               type="url"
               inputMode="url"
               placeholder="https://…"
-              value={style.cover_url ?? ""}
+              value={selectedCover ? "" : style.cover_url ?? ""}
               onChange={(e) => set("cover_url", e.target.value.trim() || undefined)}
               className={inputClass}
             />
-            <p className="mt-1.5 text-sm text-muted">Paste a link to a wide image (about 3 times wider than tall). Without one, the cover uses your accent color.</p>
+            <p className="mt-1.5 text-sm text-muted">Use a wide image, about 3 times wider than tall.</p>
           </div>
         )}
       </Group>
