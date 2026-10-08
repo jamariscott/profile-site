@@ -13,7 +13,7 @@ import "@fontsource/inter/700.css";
 import "@fontsource-variable/archivo/wdth.css";
 import "./index.css";
 
-// Design trial (redesign preview only): ?palette=a|b|c|d and ?logo=a|b switch the
+// Design trial (redesign preview only): ?palette=a…f and ?logo=a|b switch the
 // platform palette and logo mark. Kept for the tab's session so links keep it.
 // Remove once a palette and logo are chosen.
 for (const key of ["palette", "logo"]) {

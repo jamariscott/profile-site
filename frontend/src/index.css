@@ -465,3 +465,36 @@ html[data-palette="d"][data-mode="dark"]:not([data-theme]) {
   --c-accent-fill: 143 168 255; --c-accent-fill-hover: 170 190 255;
   --c-highlight: 143 168 255; --c-on-highlight: 18 18 18;
 }
+/* E — black + tangerine on bone */
+html[data-palette="e"][data-mode="light"]:not([data-theme]) {
+  --c-bg: 242 241 236; --c-surface: 250 249 245; --c-surface-2: 230 229 222;
+  --c-text: 21 21 21; --c-muted: 82 82 82; --c-subtle: 104 104 100;
+  --c-line: 218 216 208; --c-line-strong: 190 188 180;
+  --c-accent: 21 21 21; --c-accent-hover: 55 55 55; --c-accent-contrast: 242 241 236;
+  --c-accent-fill: 21 21 21; --c-accent-fill-hover: 55 55 55;
+  --c-highlight: 255 138 61; --c-on-highlight: 21 21 21;
+}
+html[data-palette="e"][data-mode="dark"]:not([data-theme]) {
+  --c-bg: 18 18 18; --c-surface: 28 28 28; --c-surface-2: 40 40 40;
+  --c-text: 242 241 236; --c-muted: 190 190 186; --c-subtle: 145 145 140;
+  --c-line: 48 48 48; --c-line-strong: 70 70 70;
+  --c-accent: 255 138 61; --c-accent-hover: 255 160 100; --c-accent-contrast: 18 18 18;
+  --c-accent-fill: 255 138 61; --c-accent-fill-hover: 255 160 100;
+  --c-highlight: 255 138 61; --c-on-highlight: 18 18 18;
+}
+/* F — aubergine + periwinkle */
+html[data-palette="f"][data-mode="light"]:not([data-theme]) {
+  --c-text: 43 26 58; --c-muted: 92 74 108; --c-subtle: 110 96 124;
+  --c-line: 224 217 228; --c-line-strong: 198 188 206;
+  --c-accent: 43 26 58; --c-accent-hover: 68 44 90; --c-accent-contrast: 244 244 240;
+  --c-accent-fill: 43 26 58; --c-accent-fill-hover: 68 44 90;
+  --c-highlight: 169 184 255; --c-on-highlight: 43 26 58;
+}
+html[data-palette="f"][data-mode="dark"]:not([data-theme]) {
+  --c-bg: 26 16 36; --c-surface: 38 25 52; --c-surface-2: 52 36 70;
+  --c-text: 246 242 238; --c-muted: 200 190 210; --c-subtle: 156 144 170;
+  --c-line: 58 42 76; --c-line-strong: 82 62 104;
+  --c-accent: 169 184 255; --c-accent-hover: 190 202 255; --c-accent-contrast: 26 16 36;
+  --c-accent-fill: 169 184 255; --c-accent-fill-hover: 190 202 255;
+  --c-highlight: 169 184 255; --c-on-highlight: 26 16 36;
+}
