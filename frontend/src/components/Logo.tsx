@@ -1,37 +1,15 @@
 /**
- * Timez of Today mark: a clock face whose hands spell a T (it reads 9:15 —
- * a time of day). Drawn in currentColor with the face "punched out", so it
- * works on paper, on night, and inside any profile theme.
+ * Timez of Today mark, "Dawn T": a sun resting on the T's crossbar (today,
+ * rising), with a dot where crossbar meets stem (the clock's center pin —
+ * "now"). Ink is currentColor and the sun/dot use the highlight token, so it
+ * follows whichever palette and light/dark mode is active.
  */
 export function LogoMark({ size = 28, className }: { size?: number; className?: string }) {
-  // Logo trial (?logo=b, see main.tsx): B is the sunrise mark — a sun breaking
-  // the horizon with the T as its first ray.
-  if (document.documentElement.dataset.logo === "b") {
-    return (
-      <svg width={size} height={size} viewBox="0 0 32 32" className={className} aria-hidden focusable="false">
-        <path d="M4 21a12 12 0 0 1 24 0z" fill="rgb(var(--c-highlight))" />
-        <path d="M2.5 21h27M16 9v12M6 26h20" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" fill="none" />
-      </svg>
-    );
-  }
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      className={className}
-      aria-hidden
-      focusable="false"
-    >
-      <circle cx="16" cy="16" r="15" fill="currentColor" />
-      <path
-        d="M7.5 16h17M16 16v9"
-        stroke="rgb(var(--c-bg))"
-        strokeWidth="3.6"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <circle cx="16" cy="16" r="2.4" fill="rgb(var(--c-highlight))" />
+    <svg width={size} height={size} viewBox="0 0 48 48" className={className} aria-hidden focusable="false">
+      <path d="M13 19.5A11 11 0 0 1 35 19.5Z" fill="rgb(var(--c-highlight))" />
+      <path d="M6 24H42M24 24V42" stroke="currentColor" strokeWidth="4" strokeLinecap="round" fill="none" />
+      <circle cx="24" cy="24" r="2.7" fill="rgb(var(--c-highlight))" />
     </svg>
   );
 }
