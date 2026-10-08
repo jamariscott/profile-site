@@ -4,6 +4,16 @@
  * works on paper, on night, and inside any profile theme.
  */
 export function LogoMark({ size = 28, className }: { size?: number; className?: string }) {
+  // Logo trial (?logo=b, see main.tsx): B is the sunrise mark — a sun breaking
+  // the horizon with the T as its first ray.
+  if (document.documentElement.dataset.logo === "b") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 32 32" className={className} aria-hidden focusable="false">
+        <path d="M4 21a12 12 0 0 1 24 0z" fill="rgb(var(--c-highlight))" />
+        <path d="M2.5 21h27M16 9v12M6 26h20" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" fill="none" />
+      </svg>
+    );
+  }
   return (
     <svg
       width={size}
