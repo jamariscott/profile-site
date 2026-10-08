@@ -46,3 +46,7 @@ DESIGN.md
 BACKLOG.md
 SAMPLE_ARTICLES.md
 PLATFORM_ROADMAP.md
+
+# Local dev test account notes
+.claude/local-test-account.md
+.claude/launch.json

@@ -366,12 +366,12 @@ export default function ProfileView({
         )}
 
         {header === "bigname" ? (
-          <div>
+          <div className="[container-type:inline-size]">
             <div className="flex items-start justify-between gap-4">
               <Avatar profile={profile} size="h-16 w-16" />
               {share}
             </div>
-            <h1 className="mt-6 break-words font-heading text-[clamp(3rem,11vw,7.5rem)] font-black leading-[0.88] tracking-tight text-text">
+            <h1 className="mt-6 break-words font-heading text-[clamp(2.25rem,13cqi,7.5rem)] font-black leading-[0.88] tracking-tight text-text">
               {name}
             </h1>
             {profile.headline && <p className="mt-4 max-w-2xl text-xl text-muted">{profile.headline}</p>}
