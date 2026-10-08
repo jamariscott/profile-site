@@ -3,7 +3,8 @@
     .ink { stroke: #2B1A3A; }
     @media (prefers-color-scheme: dark) { .ink { stroke: #F6F2EE; } }
   </style>
-  <path d="M13 19.5A11 11 0 0 1 35 19.5Z" fill="#A9B8FF"/>
+  <path d="M15 19.5A9 9 0 0 1 33 19.5Z" fill="#FF8A3D"/>
+  <path d="M24 4.5V7.5M13.2 9L15.3 11.1M34.8 9L32.7 11.1M8.5 17H11.5M36.5 17H39.5" stroke="#FF8A3D" stroke-width="2.6" stroke-linecap="round"/>
   <path class="ink" d="M6 24H42M24 24V42" stroke-width="4" stroke-linecap="round" fill="none"/>
-  <circle cx="24" cy="24" r="2.7" fill="#A9B8FF"/>
+  <circle cx="24" cy="24" r="2.7" fill="#FF8A3D"/>
 </svg>
