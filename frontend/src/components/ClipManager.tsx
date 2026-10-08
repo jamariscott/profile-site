@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { EditorSection, ErrorText, FieldLabel, inputClass, primaryBtn, removeBtn } from "./ui";
 import { apiJson, apiFetch } from "../lib/api";
 import { fetchOEmbedTitle } from "../lib/oembed";
 import TrackEmbed from "./TrackEmbed";
@@ -9,7 +10,7 @@ interface Clip {
   title: string | null;
 }
 
-export default function ClipManager() {
+export default function ClipManager({ onChange }: { onChange?: () => void } = {}) {
   const [clips, setClips] = useState<Clip[]>([]);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -40,58 +41,71 @@ export default function ClipManager() {
         body: JSON.stringify({ url: u, title: title.trim() }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || "Could not add video");
+      if (!res.ok) throw new Error(data.detail || "Couldn't add the video. Check the link and try again.");
       setClips((p) => [...p, data]);
+      onChange?.();
       setUrl(""); setTitle("");
     } catch (err: any) {
-      setError(err?.message || "Could not add video");
+      setError(err?.message || "Couldn't add the video. Check the link and try again.");
     }
   };
 
   const delClip = async (id: number) => {
+    if (!confirm("Remove this video from your page?")) return;
     const res = await apiFetch(`/api/me/clips/${id}`, { method: "DELETE" });
-    if (res.ok) setClips((p) => p.filter((c) => c.id !== id));
+    if (res.ok) {
+      setClips((p) => p.filter((c) => c.id !== id));
+      onChange?.();
+    }
   };
 
   return (
-    <div>
-      <h3 className="text-text font-semibold mb-1">Featured videos</h3>
-      <p className="text-muted text-xs mb-4">
-        Paste a YouTube, TikTok, or other video link — it plays inline on your profile.
-      </p>
-
-      {clips.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+    <div className="space-y-6">
+      {clips.length > 0 ? (
+        <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           {clips.map((c) => (
-            <div key={c.id} className="space-y-1">
+            <li key={c.id}>
               <TrackEmbed url={c.url} title={c.title} />
-              <button onClick={() => delClip(c.id)} className="text-danger hover:opacity-80 text-xs">Remove</button>
-            </div>
+              <div className="mt-1.5 flex items-center justify-between gap-2">
+                <p className="min-w-0 truncate text-sm text-muted">{c.title || c.url}</p>
+                <button type="button" onClick={() => delClip(c.id)} className={removeBtn}>
+                  Remove
+                </button>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
+      ) : (
+        <p className="text-muted">No videos yet. Add your first one below.</p>
       )}
 
-      <form onSubmit={addClip} className="space-y-2">
-        <input
-          type="text"
-          placeholder="Paste YouTube / TikTok / video link"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onBlur={handleUrlBlur}
-          className="border border-line bg-surface text-text p-3 rounded-btn w-full"
-        />
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder={fetchingTitle ? "Fetching title…" : "Title (optional)"}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="border border-line bg-surface text-text p-3 rounded-btn flex-1"
-          />
-          <button type="submit" className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium whitespace-nowrap">Add video</button>
-        </div>
-        {error && <p className="text-danger text-sm">{error}</p>}
-      </form>
+      <EditorSection title="Add a video" hint="Paste a YouTube, TikTok or other video link. It plays right on your page.">
+        <form onSubmit={addClip} className="space-y-4">
+          <div>
+            <FieldLabel htmlFor="clip-url">Video link</FieldLabel>
+            <input
+              id="clip-url"
+              type="url"
+              inputMode="url"
+              placeholder="https://youtube.com/watch?v=…"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onBlur={handleUrlBlur}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <FieldLabel htmlFor="clip-title" hint={fetchingTitle ? "(getting the title…)" : "(optional, filled in for you when possible)"}>
+              Title
+            </FieldLabel>
+            <input id="clip-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
+          </div>
+          {error && <ErrorText>{error}</ErrorText>}
+          <button type="submit" className={primaryBtn}>
+            Add video
+          </button>
+        </form>
+      </EditorSection>
     </div>
   );
 }

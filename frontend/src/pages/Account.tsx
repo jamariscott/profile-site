@@ -440,6 +440,7 @@ export default function Account() {
     projects.length +
     (previewSource?.tracks?.length || 0) +
     (previewSource?.releases?.length || 0) +
+    (previewSource?.shows?.length || 0) +
     (previewSource?.photos?.length || 0) +
     (previewSource?.clips?.length || 0) +
     (previewSource?.posts?.length || 0);
@@ -747,23 +748,23 @@ export default function Account() {
                 <Label htmlFor="genres" hint="(separate with commas)">Genres</Label>
                 <input id="genres" type="text" placeholder="Hip-hop, R&B, Soul" value={genres} onChange={(e) => edit(setGenres)(e.target.value)} className={inputClass} />
               </div>
-              <MusicManager />
+              <MusicManager onChange={refreshPreview} />
             </Card>
           )}
 
           {tab === "gallery" && (
             <Card>
-              <GalleryManager />
+              <GalleryManager onChange={refreshPreview} />
             </Card>
           )}
           {tab === "videos" && (
             <Card>
-              <ClipManager />
+              <ClipManager onChange={refreshPreview} />
             </Card>
           )}
           {tab === "posts" && (
             <Card>
-              <PostManager />
+              <PostManager onChange={refreshPreview} />
             </Card>
           )}
 

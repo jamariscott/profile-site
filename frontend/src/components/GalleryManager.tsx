@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { EditorSection, ErrorText, FieldLabel, inputClass, primaryBtn, removeBtn, secondaryBtn } from "./ui";
 import { apiJson, apiFetch } from "../lib/api";
 import { compressAndResizeImage } from "../lib/upload";
 
@@ -8,7 +9,7 @@ interface Photo {
   caption: string | null;
 }
 
-export default function GalleryManager() {
+export default function GalleryManager({ onChange }: { onChange?: () => void } = {}) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [caption, setCaption] = useState("");
   const [pending, setPending] = useState("");
@@ -30,7 +31,7 @@ export default function GalleryManager() {
       const base64 = await compressAndResizeImage(file, 1400, 1400);
       setPending(base64);
     } catch (err: any) {
-      setError(err?.message || "Failed to process image.");
+      setError(err?.message || "Couldn't use that image. Try a JPG or PNG.");
     } finally {
       setUploading(false);
       if (e.target) e.target.value = "";
@@ -46,74 +47,71 @@ export default function GalleryManager() {
         body: JSON.stringify({ image_url: pending, caption: caption.trim() }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || "Could not add photo");
+      if (!res.ok) throw new Error(data.detail || "Couldn't add the photo. Try again.");
       setPhotos((p) => [...p, data]);
+      onChange?.();
       setPending(""); setCaption("");
     } catch (err: any) {
-      setError(err?.message || "Could not add photo");
+      setError(err?.message || "Couldn't add the photo. Try again.");
     }
   };
 
   const delPhoto = async (id: number) => {
+    if (!confirm("Remove this photo from your gallery?")) return;
     const res = await apiFetch(`/api/me/photos/${id}`, { method: "DELETE" });
-    if (res.ok) setPhotos((p) => p.filter((x) => x.id !== id));
+    if (res.ok) {
+      setPhotos((p) => p.filter((x) => x.id !== id));
+      onChange?.();
+    }
   };
 
   return (
-    <div>
-      <h3 className="text-text font-semibold mb-3">Gallery</h3>
-
-      {photos.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+    <div className="space-y-6">
+      {photos.length > 0 ? (
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {photos.map((ph) => (
-            <div key={ph.id} className="space-y-1">
-              <div className="aspect-square rounded-btn overflow-hidden bg-surface-2 border border-line">
-                <img src={ph.image_url} alt={ph.caption || ""} className="w-full h-full object-cover" />
+            <li key={ph.id}>
+              <div className="aspect-square overflow-hidden rounded-card border border-line bg-surface-2">
+                <img src={ph.image_url} alt={ph.caption || ""} loading="lazy" className="h-full w-full object-cover" />
               </div>
-              {ph.caption && <p className="text-subtle text-xs truncate">{ph.caption}</p>}
-              <button onClick={() => delPhoto(ph.id)} className="text-danger hover:opacity-80 text-xs">Remove</button>
-            </div>
+              <div className="mt-1.5 flex items-center justify-between gap-2">
+                <p className="min-w-0 truncate text-sm text-muted">{ph.caption || "No caption"}</p>
+                <button type="button" onClick={() => delPhoto(ph.id)} className={removeBtn}>
+                  Remove
+                </button>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
+      ) : (
+        <p className="text-muted">No photos yet. Add your first one below.</p>
       )}
 
-      <div className="border border-line rounded-btn p-4 space-y-3">
-        <div className="flex items-center gap-4">
+      <EditorSection title="Add a photo">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           {pending ? (
-            <img src={pending} alt="Preview" className="w-20 h-20 rounded-btn object-cover border border-line shrink-0" />
+            <img src={pending} alt="Photo to add" className="h-28 w-28 shrink-0 rounded-card border border-line object-cover" />
           ) : (
-            <div className="w-20 h-20 rounded-btn bg-surface-2 border border-line flex items-center justify-center text-subtle text-xs shrink-0">
-              No image
+            <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-card border border-dashed border-line-strong text-sm text-subtle">
+              No photo
             </div>
           )}
-          <div className="flex-1 space-y-2">
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              className="bg-surface-2 border border-line text-text hover:border-line-strong px-4 py-2.5 rounded-btn font-medium text-sm transition-all"
-            >
-              {uploading ? "Processing…" : pending ? "Choose a different image" : "Choose image"}
+          <div className="min-w-0 flex-1 space-y-4">
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className={secondaryBtn}>
+              {uploading ? "Preparing…" : pending ? "Choose a different photo" : "Choose a photo"}
             </button>
             <input type="file" ref={fileRef} onChange={handleFile} accept="image/*" className="hidden" />
-            <input
-              type="text"
-              placeholder="Caption (optional)"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              className="border border-line bg-surface text-text p-2.5 rounded-btn w-full text-sm"
-            />
+            <div>
+              <FieldLabel htmlFor="photo-caption" hint="(optional)">Caption</FieldLabel>
+              <input id="photo-caption" type="text" value={caption} onChange={(e) => setCaption(e.target.value)} className={inputClass} />
+            </div>
+            {error && <ErrorText>{error}</ErrorText>}
+            <button type="button" onClick={addPhoto} disabled={!pending} className={primaryBtn}>
+              Add photo
+            </button>
           </div>
         </div>
-        {error && <p className="text-danger text-sm">{error}</p>}
-        <button
-          onClick={addPhoto}
-          disabled={!pending}
-          className="bg-accent text-accent-contrast px-5 py-2.5 rounded-btn font-medium disabled:opacity-50"
-        >
-          Add photo
-        </button>
-      </div>
+      </EditorSection>
     </div>
   );
 }

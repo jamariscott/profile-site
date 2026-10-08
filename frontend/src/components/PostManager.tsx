@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { EditorSection, ErrorText, FieldLabel, inputClass, primaryBtn, removeBtn } from "./ui";
 import { apiJson, apiFetch } from "../lib/api";
 import RichTextEditor from "./RichTextEditor";
+import { formatDate } from "../lib/format";
 
 interface Post {
   id: number;
@@ -9,7 +11,7 @@ interface Post {
   created_at: string | null;
 }
 
-export default function PostManager() {
+export default function PostManager({ onChange }: { onChange?: () => void } = {}) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -24,7 +26,7 @@ export default function PostManager() {
   const addPost = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!title.trim()) { setError("A title is required."); return; }
+    if (!title.trim()) { setError("Give your post a title."); return; }
     setSaving(true);
     try {
       const res = await apiFetch("/api/me/posts", {
@@ -32,61 +34,68 @@ export default function PostManager() {
         body: JSON.stringify({ title: title.trim(), body }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || "Could not add post");
+      if (!res.ok) throw new Error(data.detail || "Couldn't publish the post. Try again.");
       setPosts((p) => [data, ...p]);
+      onChange?.();
       setTitle(""); setBody("");
     } catch (err: any) {
-      setError(err?.message || "Could not add post");
+      setError(err?.message || "Couldn't publish the post. Try again.");
     } finally {
       setSaving(false);
     }
   };
 
   const delPost = async (id: number) => {
-    if (!confirm("Delete this post?")) return;
+    if (!confirm("Delete this post? This can't be undone.")) return;
     const res = await apiFetch(`/api/me/posts/${id}`, { method: "DELETE" });
-    if (res.ok) setPosts((p) => p.filter((x) => x.id !== id));
+    if (res.ok) {
+      setPosts((p) => p.filter((x) => x.id !== id));
+      onChange?.();
+    }
   };
 
   return (
-    <div>
-      <h3 className="text-text font-semibold mb-1">Posts</h3>
-      <p className="text-muted text-xs mb-4">Short essays and writing that show on your public profile.</p>
-
-      {posts.length > 0 && (
-        <div className="space-y-3 mb-6">
+    <div className="space-y-6">
+      {posts.length > 0 ? (
+        <ul className="space-y-3">
           {posts.map((p) => (
-            <div key={p.id} className="border border-line rounded-btn p-4 flex justify-between items-start gap-4">
+            <li key={p.id} className="flex items-start justify-between gap-4 rounded-btn border border-line p-4">
               <div className="min-w-0">
-                <h4 className="text-text font-semibold">{p.title}</h4>
+                <h3 className="font-semibold">{p.title}</h3>
                 {p.created_at && (
-                  <span className="text-subtle text-xs">
-                    {new Date(p.created_at).toLocaleDateString()}
-                  </span>
+                  <time dateTime={p.created_at} className="text-sm text-subtle">
+                    Published {formatDate(p.created_at)}
+                  </time>
                 )}
               </div>
-              <button onClick={() => delPost(p.id)} className="text-danger hover:opacity-80 text-sm shrink-0">Delete</button>
-            </div>
+              <button type="button" onClick={() => delPost(p.id)} className={`${removeBtn} shrink-0`}>
+                Delete
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
+      ) : (
+        <p className="text-muted">No posts yet. Write your first one below.</p>
       )}
 
-      <form onSubmit={addPost} className="space-y-3">
-        <input
-          type="text"
-          placeholder="Post title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="border border-line bg-surface text-text p-3 rounded-btn w-full"
-        />
-        <div className="border border-line rounded-btn p-3 bg-surface">
-          <RichTextEditor value={body} onChange={setBody} placeholder="Write your post…" />
-        </div>
-        {error && <p className="text-danger text-sm">{error}</p>}
-        <button type="submit" disabled={saving || !title.trim()} className="bg-accent text-accent-contrast px-6 py-2.5 rounded-btn font-medium disabled:opacity-50">
-          {saving ? "Publishing…" : "Publish post"}
-        </button>
-      </form>
+      <EditorSection title="Write a post" hint="Short essays and writing that appear on your page.">
+        <form onSubmit={addPost} className="space-y-4">
+          <div>
+            <FieldLabel htmlFor="post-title">Title</FieldLabel>
+            <input id="post-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
+          </div>
+          <div>
+            <FieldLabel>Post</FieldLabel>
+            <div className="rounded-btn border-2 border-line-strong bg-surface p-3 focus-within:border-text">
+              <RichTextEditor value={body} onChange={setBody} placeholder="Start writing…" />
+            </div>
+          </div>
+          {error && <ErrorText>{error}</ErrorText>}
+          <button type="submit" disabled={saving} className={primaryBtn}>
+            {saving ? "Publishing…" : "Publish post"}
+          </button>
+        </form>
+      </EditorSection>
     </div>
   );
 }
