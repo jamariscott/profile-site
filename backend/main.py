@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text, or_
@@ -12,6 +12,7 @@ from io import BytesIO
 
 from database import SessionLocal, engine, Base, get_db
 from models import Profile, Project, Link, Video, Writing, Admin, Setting, User, Comment, Track, Release, Show, Photo, Clip, Post
+from images import clean_image, decode_image, image_url, is_served_image_url
 from auth import (
     hash_password,
     verify_password,
@@ -169,16 +170,17 @@ def track_dict(t: Track) -> dict:
     return {"id": t.id, "url": t.url, "title": t.title}
 
 
-def release_dict(r: Release) -> dict:
-    return {"id": r.id, "title": r.title, "year": r.year, "cover_url": r.cover_url, "link": r.link}
+def release_dict(r: Release, request: Request = None) -> dict:
+    return {"id": r.id, "title": r.title, "year": r.year,
+            "cover_url": image_url(request, "cover", r.id, r.cover_url), "link": r.link}
 
 
 def show_dict(s: Show) -> dict:
     return {"id": s.id, "date": s.date, "venue": s.venue, "city": s.city, "ticket_url": s.ticket_url}
 
 
-def photo_dict(p: Photo) -> dict:
-    return {"id": p.id, "image_url": p.image_url, "caption": p.caption}
+def photo_dict(p: Photo, request: Request = None) -> dict:
+    return {"id": p.id, "image_url": image_url(request, "photo", p.id, p.image_url), "caption": p.caption}
 
 
 def clip_dict(c: Clip) -> dict:
@@ -263,7 +265,9 @@ def display_name(user: User) -> str:
     return full or user.username
 
 
-def profile_payload(user: User, db: Session) -> dict:
+def profile_payload(user: User, db: Session, request: Request = None) -> dict:
+    """Pass `request` on public endpoints so stored images become /api/img URLs;
+    owner-facing endpoints omit it and get the raw stored values, as before."""
     projects = db.query(Project).filter(Project.user_id == user.id).order_by(Project.id.desc()).all()
     links = db.query(Link).filter(Link.user_id == user.id).order_by(Link.id.asc()).all()
     tracks = db.query(Track).filter(Track.user_id == user.id).order_by(Track.sort.asc(), Track.id.asc()).all()
@@ -277,7 +281,7 @@ def profile_payload(user: User, db: Session) -> dict:
         "display_name": display_name(user),
         "headline": user.headline,
         "bio": user.bio,
-        "avatar_url": user.avatar_url,
+        "avatar_url": image_url(request, "avatar", user.id, user.avatar_url),
         "theme": user.profile_theme,
         "is_public": user.profile_public,
         "layout": get_layout(user),
@@ -286,9 +290,9 @@ def profile_payload(user: User, db: Session) -> dict:
         "projects": [project_dict(p) for p in projects],
         "links": [link_dict(l) for l in links],
         "tracks": [track_dict(t) for t in tracks],
-        "releases": [release_dict(r) for r in releases],
+        "releases": [release_dict(r, request) for r in releases],
         "shows": [show_dict(s) for s in shows],
-        "photos": [photo_dict(p) for p in photos],
+        "photos": [photo_dict(p, request) for p in photos],
         "clips": [clip_dict(c) for c in clips],
         "posts": [post_dict(p) for p in posts],
     }
@@ -320,7 +324,7 @@ async def get_videos(db: Session = Depends(get_db)):
     return [v.__dict__ for v in db.query(Video).all()]
 
 @app.get("/api/search")
-async def search(q: str = "", db: Session = Depends(get_db)):
+async def search(request: Request, q: str = "", db: Session = Depends(get_db)):
     query = q.strip()
     if len(query) < 2:
         return {"profiles": [], "articles": [], "videos": []}
@@ -341,14 +345,14 @@ async def search(q: str = "", db: Session = Depends(get_db)):
     ).limit(20).all()
 
     return {
-        "profiles": [{"username": u.username, "display_name": display_name(u), "headline": u.headline, "avatar_url": u.avatar_url} for u in users],
+        "profiles": [{"username": u.username, "display_name": display_name(u), "headline": u.headline, "avatar_url": image_url(request, "avatar", u.id, u.avatar_url)} for u in users],
         "articles": [{"slug": p.slug, "title": p.title, "summary": p.summary, "date": p.date.isoformat() if p.date else None} for p in posts],
         "videos": [{"id": v.id, "title": v.title, "youtube_id": v.youtube_id} for v in videos],
     }
 
 
 @app.get("/api/discover")
-async def discover(profession: str = "", db: Session = Depends(get_db)):
+async def discover(request: Request, profession: str = "", db: Session = Depends(get_db)):
     """Public directory: browse public profiles, optionally filtered by profession
     (the profile's theme id). Powers the front-door discovery page."""
     q = db.query(User).filter(User.profile_public == True)
@@ -361,7 +365,7 @@ async def discover(profession: str = "", db: Session = Depends(get_db)):
             "username": u.username,
             "display_name": display_name(u),
             "headline": u.headline,
-            "avatar_url": u.avatar_url,
+            "avatar_url": image_url(request, "avatar", u.id, u.avatar_url),
             "theme": u.profile_theme,
             "style": get_style(u),
             "genres": genres_list(u),
@@ -371,7 +375,7 @@ async def discover(profession: str = "", db: Session = Depends(get_db)):
 
 
 @app.get("/api/writing")
-async def get_writing(db: Session = Depends(get_db)):
+async def get_writing(request: Request, db: Session = Depends(get_db)):
     posts = db.query(Writing).order_by(Writing.date.desc()).all()
     return [{
         "slug": p.slug,
@@ -379,12 +383,12 @@ async def get_writing(db: Session = Depends(get_db)):
         "date": p.date.isoformat() if p.date else None,
         "summary": p.summary or "",
         "content": p.content,
-        "sponsor_logo": p.sponsor_logo,
+        "sponsor_logo": image_url(request, "sponsor", p.id, p.sponsor_logo),
         "x_posted": p.x_posted
     } for p in posts]
 
 @app.get("/api/writing/{slug}")
-async def get_writing_post(slug: str, db: Session = Depends(get_db)):
+async def get_writing_post(slug: str, request: Request, db: Session = Depends(get_db)):
     post = db.query(Writing).filter(Writing.slug == slug).first()
     if not post:
         raise HTTPException(404, "Post not found")
@@ -394,8 +398,33 @@ async def get_writing_post(slug: str, db: Session = Depends(get_db)):
         "date": post.date.isoformat() if post.date else None,
         "summary": post.summary or "",
         "content": post.content,
-        "sponsor_logo": post.sponsor_logo,
+        "sponsor_logo": image_url(request, "sponsor", post.id, post.sponsor_logo),
     }
+
+
+IMAGE_SOURCES = {
+    "avatar": (User, "avatar_url"),
+    "cover": (Release, "cover_url"),
+    "photo": (Photo, "image_url"),
+    "sponsor": (Writing, "sponsor_logo"),
+}
+
+
+@app.get("/api/img/{kind}/{key}/{token}")
+async def get_image(kind: str, key: int, token: str, db: Session = Depends(get_db)):
+    """Serve a stored data-URI image as a real image file. The token is a hash of
+    the stored value, so the URL changes whenever the image does and can be
+    cached forever."""
+    source = IMAGE_SOURCES.get(kind)
+    if not source:
+        raise HTTPException(404, "Image not found")
+    model, column = source
+    row = db.query(model).filter(model.id == key).first()
+    body, mime = decode_image(getattr(row, column, None) if row else None, token)
+    return Response(content=body, media_type=mime, headers={
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Content-Type-Options": "nosniff",
+    })
 
 @app.get("/api/settings")
 async def get_settings(db: Session = Depends(get_db)):
@@ -634,7 +663,7 @@ async def create_my_release(data: dict, user: User = Depends(get_current_user), 
     r = Release(
         title=title,
         year=(data.get("year") or "").strip() or None,
-        cover_url=(data.get("cover_url") or "").strip() or None,
+        cover_url=clean_image(data.get("cover_url"), "Cover image"),
         link=(data.get("link") or "").strip() or None,
         user_id=user.id,
     )
@@ -697,10 +726,10 @@ async def list_my_photos(user: User = Depends(get_current_user), db: Session = D
 
 @app.post("/api/me/photos")
 async def create_my_photo(data: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    image_url = (data.get("image_url") or "").strip()
-    if not image_url:
+    image = clean_image(data.get("image_url"), "Photo")
+    if not image:
         raise HTTPException(400, "An image is required")
-    p = Photo(image_url=image_url, caption=(data.get("caption") or "").strip() or None, user_id=user.id)
+    p = Photo(image_url=image, caption=(data.get("caption") or "").strip() or None, user_id=user.id)
     db.add(p)
     db.commit()
     db.refresh(p)
@@ -787,8 +816,8 @@ async def update_my_profile(data: dict, user: User = Depends(get_current_user), 
         user.headline = (data.get("headline") or "").strip() or None
     if "bio" in data:
         user.bio = (data.get("bio") or "").strip() or None
-    if "avatar_url" in data:
-        user.avatar_url = (data.get("avatar_url") or "").strip() or None
+    if "avatar_url" in data and not is_served_image_url(data.get("avatar_url")):
+        user.avatar_url = clean_image(data.get("avatar_url"), "Profile photo")
     if "is_public" in data:
         user.profile_public = bool(data.get("is_public"))
     if "theme" in data:
@@ -810,7 +839,7 @@ async def update_my_profile(data: dict, user: User = Depends(get_current_user), 
 
 
 @app.get("/api/profiles/{username}")
-async def get_public_profile(username: str, viewer: User = Depends(get_optional_user), db: Session = Depends(get_db)):
+async def get_public_profile(username: str, request: Request, viewer: User = Depends(get_optional_user), db: Session = Depends(get_db)):
     """Public profile page data. Private profiles are visible only to their owner."""
     user = db.query(User).filter(func.lower(User.username) == username.lower()).first()
     if not user:
@@ -818,7 +847,7 @@ async def get_public_profile(username: str, viewer: User = Depends(get_optional_
     is_owner = viewer is not None and viewer.id == user.id
     if not user.profile_public and not is_owner:
         raise HTTPException(403, "This profile is private")
-    return profile_payload(user, db)
+    return profile_payload(user, db, request)
 
 # ===================== COMMENTS =====================
 @app.get("/api/writing/{slug}/comments")
@@ -982,7 +1011,7 @@ async def admin_create_writing(data: dict, admin: User = Depends(require_admin),
         title=data["title"],
         summary=data.get("summary"),
         content=data["content"],
-        sponsor_logo=data.get("sponsorLogo"),
+        sponsor_logo=clean_image(data.get("sponsorLogo"), "Cover image"),
     )
     db.add(post)
     db.commit()
