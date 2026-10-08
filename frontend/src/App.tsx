@@ -12,8 +12,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import AdminLayoutSwitcher from "./components/AdminLayoutSwitcher";
-import { useSmoothScroll } from "./lib/useSmoothScroll";
 
 // Heaviest, auth-gated pages (Admin pulls in the TipTap editor) — split out of
 // the initial bundle so public pages load lighter.
@@ -21,7 +19,6 @@ const Admin = lazy(() => import("./pages/Admin"));
 const Account = lazy(() => import("./pages/Account"));
 
 export default function App() {
-  useSmoothScroll();
 
   return (
     <>
@@ -41,7 +38,6 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
-      <AdminLayoutSwitcher />
       <Analytics />
     </>
   );

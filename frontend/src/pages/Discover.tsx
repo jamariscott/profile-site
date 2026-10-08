@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import SiteNav from "../components/SiteNav";
 import SiteFooter from "../components/SiteFooter";
 import Reveal from "../components/Reveal";
@@ -58,7 +58,10 @@ function CardSkeleton() {
 }
 
 export default function Discover() {
-  const [filter, setFilter] = useState<string>("");
+  // The profession filter lives in the URL (?profession=music) so it can be linked and survives Back.
+  const [params, setParams] = useSearchParams();
+  const filter = params.get("profession") || "";
+  const setFilter = (id: string) => setParams(id ? { profession: id } : {}, { replace: true });
   const [profiles, setProfiles] = useState<DiscoverProfile[]>([]);
   const [loading, setLoading] = useState(true);
 

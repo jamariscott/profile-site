@@ -1,394 +1,355 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import PageNav from "../components/PageNav";
-import Footer from "../components/Footer";
-import HuffPostNav from "../components/HuffPostNav";
-import HuffPostFooter from "../components/HuffPostFooter";
-import DailyWireNav from "../components/DailyWireNav";
-import DailyWireFooter from "../components/DailyWireFooter";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import SiteNav from "../components/SiteNav";
+import SiteFooter from "../components/SiteFooter";
 import { API_BASE } from "../lib/config";
-import { useAuth, type AuthSession } from "../lib/auth";
-import { useLayout } from "../theme/LayoutProvider";
-import Reveal from "../components/Reveal";
+import { useAuth } from "../lib/auth";
+import { THEMES } from "../lib/themes";
+
+interface Member {
+  username: string;
+  display_name: string;
+  theme: string | null;
+}
 
 interface WritingPost {
   slug: string;
   title: string;
   date: string;
   summary: string;
-  sponsor_logo?: string;
-  content?: string;
 }
 
-function extractThumbnail(post: WritingPost): string | null {
-  if (post.sponsor_logo) return post.sponsor_logo;
-  if (post.content) {
-    const match = post.content.match(/<img[^>]+src=["']([^"']+)["']/i);
-    if (match) return match[1];
-  }
-  return null;
+const PROFESSION_LABEL: Record<string, string> = Object.fromEntries(THEMES.map((t) => [t.id, t.label]));
+
+// What each profession's page actually includes (mirrors PROFESSION_PRESETS in Account.tsx).
+const PROFESSIONS = [
+  { id: "music", name: "Musicians", gets: "Tracks, releases and upcoming shows, with players that work right on the page." },
+  { id: "photographer", name: "Photographers", gets: "A full-screen gallery that puts your images first." },
+  { id: "developer", name: "Engineers", gets: "Projects with status, and links to your code and products." },
+  { id: "creator", name: "Creators", gets: "Your videos from YouTube and other platforms, in one place." },
+  { id: "writer", name: "Writers", gets: "Posts you write right on your page, set for reading." },
+];
+
+// Lineup-poster rows: headliner first, then alternating widths and weights.
+const ROW_STYLES = [
+  "text-[clamp(2.4rem,5vw,4rem)] font-black [font-stretch:62%] leading-[0.9]",
+  "text-[clamp(1.25rem,2.4vw,1.9rem)] font-bold [font-stretch:118%] leading-none tracking-tight",
+  "text-[clamp(1.9rem,3.8vw,3rem)] font-extrabold [font-stretch:68%] leading-[0.92]",
+  "text-[clamp(1.15rem,2.1vw,1.65rem)] font-semibold [font-stretch:108%] leading-tight",
+];
+
+const USERNAME_ALLOWED = /[^a-z0-9_.-]/g;
+
+function formatDate(value: string): string {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime())
+    ? value
+    : d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
-interface VariantProps {
-  session: AuthSession | null;
-  hero?: WritingPost;
-  rest: WritingPost[];
-  loading: boolean;
+type Availability = "idle" | "short" | "checking" | "available" | "taken" | "error";
+
+function useAvailability(username: string): Availability {
+  const [state, setState] = useState<Availability>("idle");
+  useEffect(() => {
+    if (!username) return setState("idle");
+    if (username.length < 3) return setState("short");
+    setState("checking");
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      fetch(`${API_BASE}/api/profiles/${encodeURIComponent(username)}`, { signal: ctrl.signal })
+        .then((res) => setState(res.status === 404 ? "available" : res.ok || res.status === 403 ? "taken" : "error"))
+        .catch((e) => {
+          if (e.name !== "AbortError") setState("error");
+        });
+    }, 350);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [username]);
+  return state;
 }
 
-/** Placeholder shown while articles load, instead of flashing "No articles yet." */
-function FeedSkeleton() {
+const AVAILABILITY_TEXT: Record<Availability, string> = {
+  idle: "Free to join. Your page is public by default, and you can make it private any time.",
+  short: "Usernames need at least 3 characters.",
+  checking: "Checking…",
+  available: "That name is free. It's yours if you claim it now.",
+  taken: "That name is taken. Try another, or add a word to it.",
+  error: "Couldn't check that name right now. You can still continue.",
+};
+
+function ClaimForm({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hintId = useId();
+  const status = useAvailability(value);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (value.length < 3 || status === "taken") {
+      inputRef.current?.focus();
+      return;
+    }
+    navigate(`/register?username=${encodeURIComponent(value)}`);
+  };
+
+  const tone =
+    status === "available" ? "text-success" : status === "taken" || status === "short" ? "text-danger" : "text-muted";
+
   return (
-    <div className="animate-pulse" aria-hidden>
-      <div className="w-full h-72 md:h-96 rounded-card bg-surface-2 mb-5" />
-      <div className="h-3 w-24 rounded bg-surface-2 mb-3" />
-      <div className="h-8 w-3/4 rounded bg-surface-2 mb-3" />
-      <div className="h-4 w-1/2 rounded bg-surface-2" />
-    </div>
-  );
-}
-
-function EmptyFeed({ loading }: { loading: boolean }) {
-  return loading ? <FeedSkeleton /> : <p className="text-muted">No articles yet.</p>;
-}
-
-/** Shared hero call-to-action: signup/login for guests, a profile link for members. */
-function HeroCtas({ session }: { session: AuthSession | null }) {
-  if (session) {
-    return (
-      <div className="flex flex-col items-center gap-3 mt-8">
-        <p className="text-text font-medium">
-          Welcome back, {session.user.first_name || session.user.username}.
-        </p>
-        <Link
-          to={`/u/${session.user.username}`}
-          className="bg-accent text-accent-contrast px-6 py-3 rounded-btn font-medium hover:bg-accent-hover transition-colors"
+    <form onSubmit={submit} className="mt-8 max-w-xl">
+      <label htmlFor="claim-username" className="text-sm font-semibold text-text">
+        Pick your page's address
+      </label>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <div className="flex min-w-0 flex-1 items-center rounded-btn border-2 border-text bg-surface focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-text">
+          <span className="select-none whitespace-nowrap pl-3 text-sm text-muted sm:pl-4 sm:text-base">timezoftoday.com/u/</span>
+          <input
+            ref={inputRef}
+            id="claim-username"
+            name="username"
+            value={value}
+            onChange={(e) => onChange(e.target.value.toLowerCase().replace(USERNAME_ALLOWED, "").slice(0, 30))}
+            placeholder="yourname"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            aria-describedby={hintId}
+            aria-invalid={status === "taken" || status === "short"}
+            className="min-w-0 flex-1 bg-transparent py-3 pr-3 font-semibold text-text placeholder:font-normal placeholder:text-subtle focus:outline-none focus-visible:outline-none"
+          />
+        </div>
+        <button
+          type="submit"
+          className="rounded-btn bg-accent px-6 py-3.5 font-semibold text-accent-contrast transition-colors hover:bg-accent-hover"
         >
-          Go to your profile
+          Claim your page
+        </button>
+      </div>
+      <p id={hintId} aria-live="polite" className={`mt-2 text-sm ${tone}`}>
+        {AVAILABILITY_TEXT[status]}
+      </p>
+    </form>
+  );
+}
+
+function LineupPoster({ members, yourName }: { members: Member[] | null; yourName: string }) {
+  const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  // Five names keeps "your name here" above the fold. Skip anything that looks
+  // like an email (some display names fall back to one), and put people who
+  // picked a profession first.
+  const shown = (members ?? [])
+    .filter((m) => !m.display_name.includes("@"))
+    .sort((a, b) => Number(!!b.theme) - Number(!!a.theme))
+    .slice(0, 5);
+
+  return (
+    <figure
+      aria-label="Newest pages on Timez of Today"
+      className="on-ink relative overflow-hidden rounded-card bg-text p-6 text-bg sm:p-8"
+    >
+      <div className="flex items-baseline justify-between gap-4 border-b border-bg/25 pb-3 text-sm font-semibold">
+        <span>Newest pages</span>
+        <span className="text-bg/75">{today}</span>
+      </div>
+
+      <ol className="mt-5 space-y-2 [overflow-wrap:anywhere]">
+        {members === null &&
+          [0, 1, 2, 3].map((i) => (
+            <li key={i} aria-hidden className="h-10 animate-pulse rounded bg-bg/15" style={{ width: `${85 - i * 15}%` }} />
+          ))}
+
+        {members !== null && shown.length === 0 &&
+          PROFESSIONS.map((p, i) => (
+            <li key={p.id} className={`font-heading ${ROW_STYLES[i % ROW_STYLES.length]}`}>
+              {p.name}
+            </li>
+          ))}
+
+        {shown.map((m, i) => (
+          <li key={m.username} className="flex flex-wrap items-baseline gap-x-3">
+            <Link
+              to={`/u/${m.username}`}
+              className={`font-heading decoration-highlight decoration-4 underline-offset-4 hover:underline ${ROW_STYLES[i % ROW_STYLES.length]}`}
+            >
+              {m.display_name}
+            </Link>
+            {m.theme && PROFESSION_LABEL[m.theme] && (
+              <span className="text-sm font-medium text-bg/70">{PROFESSION_LABEL[m.theme]}</span>
+            )}
+          </li>
+        ))}
+
+        <li className="pt-2">
+          <span
+            className={`inline-block max-w-full rounded-[0.35rem] bg-highlight px-3 py-1 font-heading text-on-highlight ${ROW_STYLES[2]}`}
+          >
+            {yourName || "Your name here"}
+          </span>
+        </li>
+      </ol>
+
+      <figcaption className="mt-6 border-t border-bg/25 pt-3 text-sm">
+        <Link to="/discover" className="font-semibold underline decoration-highlight decoration-2 underline-offset-4">
+          See everyone on Discover
         </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-center gap-3 mt-8">
-      <Link
-        to="/register"
-        className="bg-accent text-accent-contrast px-6 py-3 rounded-btn font-medium hover:bg-accent-hover transition-colors"
-      >
-        Create your profile
-      </Link>
-      <Link
-        to="/login"
-        className="border border-line text-text px-6 py-3 rounded-btn font-medium hover:bg-surface-2 transition-colors"
-      >
-        Log in
-      </Link>
-    </div>
-  );
-}
-
-/** Today's design: brand hero + a featured article + a 3-column grid feed. */
-function ClassicHome({ session, hero, rest, loading }: VariantProps) {
-  const heroThumb = hero ? extractThumbnail(hero) : null;
-
-  return (
-    <div className="bg-bg min-h-screen flex flex-col">
-      <PageNav />
-
-      <section className="border-b border-line">
-        <div className="max-w-5xl mx-auto px-6 py-20 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-text tracking-tight">Timez of Today</h1>
-          <p className="text-lg text-muted mt-5 max-w-2xl mx-auto leading-relaxed">
-            Build a profile for whatever you do — show your work, share your links, and tell your story.
-            Plus the latest reads from the community.
-          </p>
-          <HeroCtas session={session} />
-        </div>
-      </section>
-
-      <div className="max-w-5xl mx-auto px-6 py-14 flex-1 w-full">
-        <h2 className="text-sm font-medium tracking-widest uppercase text-muted mb-8">Latest</h2>
-
-        {!hero ? (
-          <EmptyFeed loading={loading} />
-        ) : (
-          <>
-            <Reveal className="block mb-14">
-            <Link to={`/writing/${hero.slug}`} className="block group">
-              {extractThumbnail(hero) && (
-                <div className="w-full h-72 md:h-96 rounded-card overflow-hidden mb-5">
-                  <img
-                    src={heroThumb!}
-                    alt={hero.title}
-                    className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-              )}
-              <span className="text-xs text-muted block mb-2">{hero.date}</span>
-              <h3 className="text-3xl md:text-4xl font-bold text-text group-hover:text-muted transition-colors leading-tight mb-3">
-                {hero.title}
-              </h3>
-              <p className="text-muted md:text-lg line-clamp-2 max-w-3xl">{hero.summary}</p>
-            </Link>
-            </Reveal>
-
-            {rest.length > 0 && (
-              <>
-                <hr className="border-line mb-10" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {rest.map((post, i) => {
-                    const thumb = extractThumbnail(post);
-                    return (
-                      <Reveal key={post.slug} delay={i * 0.05}>
-                      <Link to={`/writing/${post.slug}`} className="block group">
-                        {thumb && (
-                          <div className="w-full h-40 rounded-xl overflow-hidden mb-3">
-                            <img
-                              src={thumb}
-                              alt={post.title}
-                              loading="lazy"
-                              decoding="async"
-                              className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
-                            />
-                          </div>
-                        )}
-                        <span className="text-xs text-muted block mb-1">{post.date}</span>
-                        <h3 className="font-semibold text-text group-hover:text-muted transition-colors leading-snug mb-1">
-                          {post.title}
-                        </h3>
-                        <p className="text-muted text-sm line-clamp-2">{post.summary}</p>
-                      </Link>
-                      </Reveal>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </div>
-
-      <Footer />
-    </div>
-  );
-}
-
-/** Bold editorial feel: serif headline hero, big featured story beside a dense headline list. */
-function HuffPostHome({ session, hero, rest, loading }: VariantProps) {
-  const heroThumb = hero ? extractThumbnail(hero) : null;
-  const sidebar = rest.slice(0, 5);
-  const grid = rest.slice(5);
-
-  return (
-    <div className="bg-bg min-h-screen flex flex-col">
-      <HuffPostNav />
-
-      <section className="border-b border-line bg-surface">
-        <div className="max-w-6xl mx-auto px-6 py-14 text-center">
-          <span className="text-xs font-semibold tracking-widest uppercase text-accent">The Daily Read</span>
-          <h1 className="font-heading text-5xl md:text-6xl font-bold text-text tracking-tight mt-2">
-            Timez of Today
-          </h1>
-          <p className="text-muted mt-3 max-w-2xl mx-auto leading-relaxed">
-            Build a profile for whatever you do — plus the latest reads from the community.
-          </p>
-          <HeroCtas session={session} />
-        </div>
-      </section>
-
-      <div className="max-w-6xl mx-auto px-6 py-12 flex-1 w-full">
-        {!hero ? (
-          <EmptyFeed loading={loading} />
-        ) : (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
-              <Reveal>
-              <Link to={`/writing/${hero.slug}`} className="block group">
-                {heroThumb && (
-                  <div className="w-full h-80 md:h-[28rem] rounded-card overflow-hidden mb-5">
-                    <img
-                      src={heroThumb}
-                      alt={hero.title}
-                      className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                )}
-                <span className="text-xs text-accent font-semibold uppercase tracking-wide block mb-2">
-                  {hero.date}
-                </span>
-                <h2 className="font-heading text-4xl md:text-5xl font-bold text-text group-hover:text-muted transition-colors leading-tight mb-3">
-                  {hero.title}
-                </h2>
-                <p className="text-muted text-lg line-clamp-3">{hero.summary}</p>
-              </Link>
-              </Reveal>
-
-              {sidebar.length > 0 && (
-                <Reveal className="space-y-5" delay={0.08}>
-                  <h2 className="text-sm font-semibold tracking-widest uppercase text-muted border-b border-line pb-2">
-                    Trending
-                  </h2>
-                  {sidebar.map((post) => (
-                    <Link key={post.slug} to={`/writing/${post.slug}`} className="block group pb-4 border-b border-line">
-                      <h3 className="font-heading font-semibold text-text group-hover:text-muted transition-colors leading-snug">
-                        {post.title}
-                      </h3>
-                      <span className="text-xs text-muted block mt-1">{post.date}</span>
-                    </Link>
-                  ))}
-                </Reveal>
-              )}
-            </div>
-
-            {grid.length > 0 && (
-              <>
-                <hr className="border-line my-12" />
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  {grid.map((post, i) => {
-                    const thumb = extractThumbnail(post);
-                    return (
-                      <Reveal key={post.slug} delay={i * 0.05}>
-                      <Link to={`/writing/${post.slug}`} className="block group">
-                        {thumb && (
-                          <div className="w-full h-32 rounded-xl overflow-hidden mb-2">
-                            <img
-                              src={thumb}
-                              alt={post.title}
-                              loading="lazy"
-                              decoding="async"
-                              className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
-                            />
-                          </div>
-                        )}
-                        <h3 className="font-heading text-sm font-semibold text-text group-hover:text-muted transition-colors leading-snug">
-                          {post.title}
-                        </h3>
-                      </Link>
-                      </Reveal>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </div>
-
-      <HuffPostFooter />
-    </div>
-  );
-}
-
-/** Opinion-led feel: byline-forward hero card, then a vertical feed of byline-first story cards. */
-function DailyWireHome({ session, hero, rest, loading }: VariantProps) {
-  const heroThumb = hero ? extractThumbnail(hero) : null;
-
-  return (
-    <div className="bg-bg min-h-screen flex flex-col">
-      <DailyWireNav />
-
-      <section className="border-b border-line">
-        <div className="max-w-4xl mx-auto px-6 py-16 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-text tracking-tight">Timez of Today</h1>
-          <p className="text-lg text-muted mt-5 max-w-xl mx-auto leading-relaxed">
-            Build a profile for whatever you do. Opinions, stories, and the latest from the community.
-          </p>
-          <HeroCtas session={session} />
-        </div>
-      </section>
-
-      <div className="max-w-4xl mx-auto px-6 py-12 flex-1 w-full">
-        {!hero ? (
-          <EmptyFeed loading={loading} />
-        ) : (
-          <div className="space-y-10">
-            <Reveal>
-            <Link to={`/writing/${hero.slug}`} className="block group border border-line rounded-card p-6 hover:bg-surface-2 transition-colors">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="h-9 w-9 rounded-full bg-surface-2 border border-line shrink-0" aria-hidden />
-                <div>
-                  <span className="block text-sm font-semibold text-text">Featured Story</span>
-                  <span className="block text-xs text-muted">{hero.date}</span>
-                </div>
-              </div>
-              {heroThumb && (
-                <div className="w-full h-64 rounded-card overflow-hidden mb-4">
-                  <img
-                    src={heroThumb}
-                    alt={hero.title}
-                    className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-              )}
-              <h2 className="text-3xl font-bold text-text group-hover:text-muted transition-colors leading-tight mb-2">
-                {hero.title}
-              </h2>
-              <p className="text-muted line-clamp-2">{hero.summary}</p>
-            </Link>
-            </Reveal>
-
-            {rest.length > 0 && (
-              <div className="space-y-6">
-                {rest.map((post, i) => {
-                  const thumb = extractThumbnail(post);
-                  return (
-                    <Reveal key={post.slug} delay={i * 0.04}>
-                    <Link
-                      to={`/writing/${post.slug}`}
-                      className="flex items-start gap-4 group border-b border-line pb-6"
-                    >
-                      <span className="h-8 w-8 rounded-full bg-surface-2 border border-line shrink-0" aria-hidden />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs text-muted block mb-1">{post.date}</span>
-                        <h3 className="font-semibold text-text group-hover:text-muted transition-colors leading-snug mb-1">
-                          {post.title}
-                        </h3>
-                        <p className="text-muted text-sm line-clamp-2">{post.summary}</p>
-                      </div>
-                      {thumb && (
-                        <div className="w-24 h-20 rounded-xl overflow-hidden shrink-0">
-                          <img
-                            src={thumb}
-                            alt={post.title}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-full object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
-                          />
-                        </div>
-                      )}
-                    </Link>
-                    </Reveal>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <DailyWireFooter />
-    </div>
+      </figcaption>
+    </figure>
   );
 }
 
 export default function Home() {
   const session = useAuth();
-  const { layout } = useLayout();
+  const [claim, setClaim] = useState("");
+  const [members, setMembers] = useState<Member[] | null>(null);
   const [articles, setArticles] = useState<WritingPost[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    fetch(`${API_BASE}/api/discover`)
+      .then((r) => r.json())
+      .then((d) => setMembers(Array.isArray(d) ? d : []))
+      .catch(() => setMembers([]));
     fetch(`${API_BASE}/api/writing`)
-      .then((res) => res.json())
-      .then((data) => setArticles(Array.isArray(data) ? data : []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .then((r) => r.json())
+      .then((d) => setArticles(Array.isArray(d) ? d.slice(0, 3) : []))
+      .catch(() => {});
   }, []);
 
-  const [hero, ...rest] = articles;
+  return (
+    <div className="flex min-h-screen flex-col bg-bg text-text">
+      <SiteNav />
 
-  if (layout === "huffpost") return <HuffPostHome session={session} hero={hero} rest={rest} loading={loading} />;
-  if (layout === "dailywire") return <DailyWireHome session={session} hero={hero} rest={rest} loading={loading} />;
-  return <ClassicHome session={session} hero={hero} rest={rest} loading={loading} />;
+      <main id="main">
+        {/* Hero: the claim, visible on first load. */}
+        <section className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-10 px-4 pb-16 pt-10 sm:px-6 md:pt-16 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
+          <div className="min-w-0 lg:pt-6">
+            <h1 className="font-heading text-[clamp(2.75rem,7vw,5.25rem)] font-black leading-[0.92] tracking-tight [font-stretch:80%] [text-wrap:balance]">
+              Show the world what you do.
+            </h1>
+            <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted">
+              One page for your music, photos, projects or writing. Your links, your shows and your latest work, all at one
+              address.
+            </p>
+            {session ? (
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  to={`/u/${session.user.username}`}
+                  className="rounded-btn bg-accent px-6 py-3.5 font-semibold text-accent-contrast transition-colors hover:bg-accent-hover"
+                >
+                  Go to your page
+                </Link>
+                <Link to="/account" className="rounded-btn border-2 border-text px-6 py-3 font-semibold text-text hover:bg-surface-2">
+                  Edit your page
+                </Link>
+              </div>
+            ) : (
+              <ClaimForm value={claim} onChange={setClaim} />
+            )}
+          </div>
+
+          <LineupPoster members={members} yourName={session ? session.user.username : claim} />
+        </section>
+
+        {/* What each profession's page includes. */}
+        <section aria-labelledby="professions" className="border-t border-line">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+            <h2 id="professions" className="font-heading text-3xl font-extrabold tracking-tight [font-stretch:85%] sm:text-4xl">
+              Built around what you do
+            </h2>
+            <p className="mt-3 max-w-xl text-muted">
+              Pick your profession and your page comes set up with the right sections. Every page also gets your links and
+              a share button.
+            </p>
+            <ul className="mt-10 divide-y divide-line border-y border-line">
+              {PROFESSIONS.map((p) => (
+                <li key={p.id}>
+                  <Link
+                    to={`/discover?profession=${p.id}`}
+                    className="group grid gap-1 py-5 sm:grid-cols-[minmax(12rem,16rem)_1fr_auto] sm:items-baseline sm:gap-8"
+                  >
+                    <span className="font-heading text-2xl font-extrabold tracking-tight [font-stretch:75%] group-hover:underline group-hover:decoration-highlight group-hover:decoration-4 group-hover:underline-offset-4 sm:text-3xl">
+                      {p.name}
+                    </span>
+                    <span className="text-muted">{p.gets}</span>
+                    <span className="text-sm font-semibold text-text">See {p.name.toLowerCase()}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* A real sequence, so it's numbered. */}
+        <section aria-labelledby="how" className="bg-surface-2/60">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+            <h2 id="how" className="font-heading text-3xl font-extrabold tracking-tight [font-stretch:85%] sm:text-4xl">
+              Live in three steps
+            </h2>
+            <ol className="mt-10 grid gap-8 md:grid-cols-3">
+              {[
+                { t: "Claim your name", d: "Create a free account. Your page lives at timezoftoday.com/u/yourname." },
+                { t: "Pick what you do", d: "Choose your profession and your page gets the sections that fit it." },
+                { t: "Add your work and share", d: "Add tracks, photos, projects or posts, then share one link everywhere." },
+              ].map((s, i) => (
+                <li key={s.t} className="flex gap-4">
+                  <span
+                    aria-hidden
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-highlight font-heading text-lg font-black text-on-highlight"
+                  >
+                    {i + 1}
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-bold">{s.t}</h3>
+                    <p className="mt-1 text-muted">{s.d}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {!session && (
+              <Link
+                to="/register"
+                className="mt-10 inline-flex rounded-btn bg-accent px-6 py-3.5 font-semibold text-accent-contrast transition-colors hover:bg-accent-hover"
+              >
+                Claim your page
+              </Link>
+            )}
+          </div>
+        </section>
+
+        {articles.length > 0 && (
+          <section aria-labelledby="latest-writing" className="border-t border-line">
+            <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+              <div className="flex flex-wrap items-baseline justify-between gap-4">
+                <h2 id="latest-writing" className="font-heading text-3xl font-extrabold tracking-tight [font-stretch:85%]">
+                  Latest writing
+                </h2>
+                <Link to="/writing" className="font-semibold underline decoration-highlight decoration-2 underline-offset-4">
+                  All writing
+                </Link>
+              </div>
+              <ul className="mt-8 grid gap-8 md:grid-cols-3">
+                {articles.map((a) => (
+                  <li key={a.slug}>
+                    <Link to={`/writing/${a.slug}`} className="group block">
+                      <time dateTime={a.date} className="text-sm text-subtle">
+                        {formatDate(a.date)}
+                      </time>
+                      <h3 className="mt-1 text-xl font-bold leading-snug group-hover:underline group-hover:decoration-highlight group-hover:decoration-2 group-hover:underline-offset-4">
+                        {a.title}
+                      </h3>
+                      <p className="mt-2 line-clamp-3 text-muted">{a.summary}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <SiteFooter />
+    </div>
+  );
 }

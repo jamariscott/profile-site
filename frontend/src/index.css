@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Lenis smooth scroll (embeds stay interactive — no iframe pointer-events rule) */
-html.lenis, html.lenis body { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto !important; }
-.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
-.lenis.lenis-stopped { overflow: hidden; }
 
 /* ============================================================
    THEME TOKENS — the single source of truth for the site's look.
@@ -19,7 +14,6 @@ html.lenis, html.lenis body { height: auto; }
    ============================================================ */
 
 /* ---- CLASSIC: clean, minimal, light (the original look) ---- */
-:root,
 [data-theme="classic"] {
   --c-bg: 250 250 250;          /* page background */
   --c-surface: 255 255 255;     /* cards / panels */
@@ -48,85 +42,62 @@ html.lenis, html.lenis body { height: auto; }
 }
 
 /* ============================================================
-   SITE-WIDE DEFAULT — driven by Layout x Light/Dark mode.
-   `data-layout` is admin-controlled (LayoutProvider); `data-mode` is a
-   per-visitor preference (DarkModeProvider). Together they replace the old
-   global "Site theme" picker. The `:not([data-theme])` guard makes these
-   rules functionally inert whenever a per-profile theme is active (Profile.tsx
-   sets `data-theme` on <html> while viewing someone's page) — no specificity
-   fight needed, the per-profile [data-theme="..."] blocks below always win.
-   Each layout keeps exactly one accent hue across both modes.
+   PLATFORM THEME — the one look for the platform itself (home, discover,
+   auth, dashboard). A two-ink risograph print: ink blue on paper, with
+   sunflower used only as a fill behind ink text. `data-mode` is the
+   visitor's light/dark preference (DarkModeProvider). The
+   `:not([data-theme])` guard keeps these inert inside a member's profile,
+   where the per-profile [data-theme="..."] blocks below take over.
    ============================================================ */
-html[data-layout="classic"][data-mode="light"]:not([data-theme]) {
-  --c-bg: 250 250 250; --c-surface: 255 255 255; --c-surface-2: 244 244 245;
-  --c-text: 24 24 27; --c-muted: 113 113 122; --c-subtle: 113 113 122;
-  --c-line: 228 228 231; --c-line-strong: 212 212 216;
-  --c-accent: 24 24 27; --c-accent-hover: 63 63 70; --c-accent-contrast: 255 255 255; --c-accent-fill: 24 24 27; --c-accent-fill-hover: 63 63 70;
-  --c-danger: 220 38 38; --c-success: 22 163 74;
-  --font-heading: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-body: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --radius-card: 1.5rem; --radius-btn: 1rem;
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.05);
+html[data-mode="light"]:not([data-theme]),
+html:not([data-mode]):not([data-theme]) {
+  --c-bg: 244 244 240;           /* paper */
+  --c-surface: 251 251 248;
+  --c-surface-2: 234 235 230;
+  --c-text: 27 42 107;           /* ink blue — stands in for black */
+  --c-muted: 74 85 133;
+  --c-subtle: 100 108 147;
+  --c-line: 217 219 227;
+  --c-line-strong: 190 194 210;
+  --c-accent: 27 42 107;
+  --c-accent-hover: 44 62 140;
+  --c-accent-contrast: 244 244 240;
+  --c-accent-fill: 27 42 107;
+  --c-accent-fill-hover: 44 62 140;
+  --c-highlight: 255 181 17;     /* sunflower — fills only, ink text on top */
+  --c-on-highlight: 27 42 107;
+  --c-danger: 180 28 44;
+  --c-success: 20 115 68;
+  --font-heading: "Archivo Variable", Archivo, system-ui, sans-serif;
+  --font-body: "Archivo Variable", Archivo, system-ui, sans-serif;
+  --radius-card: 0.75rem;
+  --radius-btn: 0.5rem;
+  --shadow-card: 0 1px 0 rgb(27 42 107 / 0.06);
   color-scheme: light;
 }
-html[data-layout="classic"][data-mode="dark"]:not([data-theme]) {
-  --c-bg: 9 9 11; --c-surface: 24 24 27; --c-surface-2: 39 39 42;
-  --c-text: 244 244 245; --c-muted: 161 161 170; --c-subtle: 133 133 142;
-  --c-line: 39 39 42; --c-line-strong: 63 63 70;
-  --c-accent: 244 244 245; --c-accent-hover: 212 212 216; --c-accent-contrast: 24 24 27; --c-accent-fill: 244 244 245; --c-accent-fill-hover: 212 212 216;
-  --c-danger: 248 113 113; --c-success: 74 222 128;
-  --font-heading: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-body: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --radius-card: 1.5rem; --radius-btn: 1rem;
-  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 24px rgb(0 0 0 / 0.45);
-  color-scheme: dark;
-}
-html[data-layout="huffpost"][data-mode="light"]:not([data-theme]) {
-  --c-bg: 245 245 245; --c-surface: 255 255 255; --c-surface-2: 240 240 240;
-  --c-text: 17 17 17; --c-muted: 87 87 87; --c-subtle: 110 110 110;
-  --c-line: 222 222 222; --c-line-strong: 190 190 190;
-  --c-accent: 13 190 117; --c-accent-hover: 9 150 92; --c-accent-contrast: 255 255 255; --c-accent-fill: 4 133 85; --c-accent-fill-hover: 3 112 71;
-  --c-danger: 200 30 30; --c-success: 9 150 92;
-  --font-heading: Georgia, "Times New Roman", Times, serif;
-  --font-body: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
-  --radius-card: 0.25rem; --radius-btn: 0.125rem;
-  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.08);
-  color-scheme: light;
-}
-html[data-layout="huffpost"][data-mode="dark"]:not([data-theme]) {
-  --c-bg: 10 26 22; --c-surface: 18 38 32; --c-surface-2: 28 50 43;
-  --c-text: 240 245 242; --c-muted: 160 175 168; --c-subtle: 135 150 143;
-  --c-line: 35 55 48; --c-line-strong: 55 80 70;
-  --c-accent: 13 190 117; --c-accent-hover: 9 150 92; --c-accent-contrast: 255 255 255; --c-accent-fill: 4 133 85; --c-accent-fill-hover: 3 112 71;
-  --c-danger: 248 113 113; --c-success: 74 222 128;
-  --font-heading: Georgia, "Times New Roman", Times, serif;
-  --font-body: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
-  --radius-card: 0.25rem; --radius-btn: 0.125rem;
-  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 24px rgb(0 0 0 / 0.45);
-  color-scheme: dark;
-}
-html[data-layout="dailywire"][data-mode="light"]:not([data-theme]) {
-  --c-bg: 245 245 245; --c-surface: 255 255 255; --c-surface-2: 235 235 235;
-  --c-text: 17 17 17; --c-muted: 107 107 107; --c-subtle: 110 110 110;
-  --c-line: 224 224 224; --c-line-strong: 200 200 200;
-  --c-accent: 219 61 59; --c-accent-hover: 235 96 94; --c-accent-contrast: 255 255 255; --c-accent-fill: 208 55 53; --c-accent-fill-hover: 185 44 42;
-  --c-danger: 200 30 30; --c-success: 22 163 74;
-  --font-heading: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --radius-card: 0.75rem; --radius-btn: 9999px;
-  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.08);
-  color-scheme: light;
-}
-html[data-layout="dailywire"][data-mode="dark"]:not([data-theme]) {
-  --c-bg: 10 9 9; --c-surface: 21 21 21; --c-surface-2: 31 31 31;
-  --c-text: 229 229 229; --c-muted: 143 143 143; --c-subtle: 128 128 128;
-  --c-line: 31 31 31; --c-line-strong: 51 51 51;
-  --c-accent: 219 61 59; --c-accent-hover: 235 96 94; --c-accent-contrast: 255 255 255; --c-accent-fill: 208 55 53; --c-accent-fill-hover: 185 44 42;
-  --c-danger: 248 113 113; --c-success: 74 222 128;
-  --font-heading: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --radius-card: 0.75rem; --radius-btn: 9999px;
-  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.04), 0 8px 24px rgb(0 0 0 / 0.45);
+html[data-mode="dark"]:not([data-theme]) {
+  --c-bg: 14 20 48;              /* night */
+  --c-surface: 22 30 66;
+  --c-surface-2: 32 42 84;
+  --c-text: 244 244 240;
+  --c-muted: 184 189 210;
+  --c-subtle: 140 147 178;
+  --c-line: 40 50 92;
+  --c-line-strong: 62 74 122;
+  --c-accent: 255 181 17;
+  --c-accent-hover: 255 199 77;
+  --c-accent-contrast: 14 20 48;
+  --c-accent-fill: 255 181 17;
+  --c-accent-fill-hover: 255 199 77;
+  --c-highlight: 255 181 17;
+  --c-on-highlight: 14 20 48;
+  --c-danger: 255 120 130;
+  --c-success: 90 214 150;
+  --font-heading: "Archivo Variable", Archivo, system-ui, sans-serif;
+  --font-body: "Archivo Variable", Archivo, system-ui, sans-serif;
+  --radius-card: 0.75rem;
+  --radius-btn: 0.5rem;
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.04);
   color-scheme: dark;
 }
 
@@ -365,6 +336,10 @@ h1, h2, h3, h4 {
 }
 .on-dark :focus-visible {
   outline-color: #fff;
+}
+/* Inverted blocks (bg-text, e.g. the lineup poster): ring in the page color. */
+.on-ink :focus-visible {
+  outline-color: rgb(var(--c-bg));
 }
 
 /* Subtle press feedback on buttons and solid-accent links. */

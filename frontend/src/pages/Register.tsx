@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import SiteNav from "../components/SiteNav";
 import { apiJson } from "../lib/api";
 import { setSession, type AuthSession } from "../lib/auth";
@@ -7,7 +7,9 @@ import { setSession, type AuthSession } from "../lib/auth";
 export default function Register() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState("");
+  const [params] = useSearchParams();
+  // Prefilled from the Home page claim field (/register?username=...).
+  const [username, setUsername] = useState(params.get("username") || "");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");

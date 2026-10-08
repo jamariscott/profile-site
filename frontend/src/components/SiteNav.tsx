@@ -1,12 +1,6 @@
-import { useLayout } from "../theme/LayoutProvider";
-import PageNav from "./PageNav";
-import HuffPostNav from "./HuffPostNav";
-import DailyWireNav from "./DailyWireNav";
+import PlatformNav from "./PlatformNav";
 
-/** Renders the nav matching the site's current layout — used on every page, not just the homepage. */
+/** Site-wide nav used on every page. One design now; the old per-layout navs are retired. */
 export default function SiteNav() {
-  const { layout } = useLayout();
-  if (layout === "huffpost") return <HuffPostNav />;
-  if (layout === "dailywire") return <DailyWireNav />;
-  return <PageNav />;
+  return <PlatformNav />;
 }

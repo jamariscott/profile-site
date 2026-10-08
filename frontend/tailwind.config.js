@@ -20,6 +20,8 @@ export default {
         accent: "rgb(var(--c-accent) / <alpha-value>)",
         "accent-hover": "rgb(var(--c-accent-hover) / <alpha-value>)",
         "accent-contrast": "rgb(var(--c-accent-contrast) / <alpha-value>)",
+        highlight: "rgb(var(--c-highlight) / <alpha-value>)",
+        "on-highlight": "rgb(var(--c-on-highlight) / <alpha-value>)",
         danger: "rgb(var(--c-danger) / <alpha-value>)",
         success: "rgb(var(--c-success) / <alpha-value>)",
       },

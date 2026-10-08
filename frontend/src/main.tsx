@@ -9,6 +9,8 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
+// Platform typeface: Archivo with its width axis (62–125%) for the lineup poster.
+import "@fontsource-variable/archivo/wdth.css";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
