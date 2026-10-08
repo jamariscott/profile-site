@@ -10,6 +10,7 @@ import GalleryManager from "../components/GalleryManager";
 import ClipManager from "../components/ClipManager";
 import PostManager from "../components/PostManager";
 import ProfileView, { type PublicProfile, type LayoutSection } from "../components/ProfileView";
+import ProfileFrame from "../components/ProfileFrame";
 import { compressAndResizeImage } from "../lib/upload";
 import { ALL_SECTION_TYPES, presetFor } from "../lib/professions";
 
@@ -599,9 +600,9 @@ export default function Account() {
               <p className="text-muted text-sm">This is how your public page looks. Unsaved profile edits show here too — Save on the Profile tab to publish.</p>
               <button onClick={refreshPreview} className="text-sm text-muted hover:text-text">Refresh</button>
             </div>
-            <div data-theme={profileTheme || undefined} className="bg-bg border border-line rounded-card p-6 md:p-10">
-              <ProfileView profile={previewProfile} />
-            </div>
+            <ProfileFrame theme={profileTheme || null} style={previewProfile.style} className="border border-line rounded-card p-6 md:p-10">
+              <ProfileView profile={previewProfile} embedded isOwner />
+            </ProfileFrame>
           </div>
         )}
 
