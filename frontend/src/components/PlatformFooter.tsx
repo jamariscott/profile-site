@@ -47,7 +47,7 @@ export default function PlatformFooter() {
         </nav>
       </div>
       <div className="border-t border-line">
-        <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-subtle sm:px-6">© {new Date().getFullYear()} Timez of Today</p>
+        <p suppressHydrationWarning className="mx-auto max-w-6xl px-4 py-5 text-xs text-subtle sm:px-6">© {new Date().getFullYear()} Timez of Today</p>
       </div>
     </footer>
   );

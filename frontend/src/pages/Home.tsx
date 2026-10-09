@@ -1,7 +1,9 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SiteNav from "../components/SiteNav";
 import SiteFooter from "../components/SiteFooter";
+import SunriseBand from "../components/SunriseBand";
+import AmbientSky from "../components/AmbientSky";
 import { API_BASE } from "../lib/config";
 import { useAuth } from "../lib/auth";
 import { THEMES } from "../lib/themes";
@@ -42,6 +44,8 @@ const ROW_STYLES = [
 ];
 
 const USERNAME_ALLOWED = /[^a-z0-9_.-]/g;
+
+const noSubscribe = () => () => {};
 
 type Availability = "idle" | "short" | "checking" | "available" | "taken" | "error";
 
@@ -132,7 +136,13 @@ function ClaimForm({ value, onChange }: { value: string; onChange: (v: string) =
 }
 
 function LineupPoster({ members, yourName }: { members: Member[] | null; yourName: string }) {
-  const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  // Empty in the prebuilt home page HTML (it would show the build day), then
+  // the visitor's own date once the live app takes over.
+  const today = useSyncExternalStore(
+    noSubscribe,
+    () => new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }),
+    () => "",
+  );
   // Five names keeps "your name here" above the fold. Skip anything that looks
   // like an email (some display names fall back to one), and put people who
   // picked a profession first.
@@ -224,7 +234,8 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg text-text">
+    <div className="isolate flex min-h-screen flex-col bg-bg text-text">
+      <AmbientSky />
       <SiteNav />
 
       <main id="main">
@@ -258,8 +269,10 @@ export default function Home() {
           <LineupPoster members={members} yourName={session ? session.user.username : claim} />
         </section>
 
+        <SunriseBand />
+
         {/* What each profession's page includes. */}
-        <section aria-labelledby="professions" className="border-t border-line">
+        <section aria-labelledby="professions">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <h2 id="professions" className="font-heading text-3xl font-extrabold tracking-tight [font-stretch:85%] sm:text-4xl">
               Built around what you do
@@ -293,16 +306,28 @@ export default function Home() {
             <h2 id="how" className="font-heading text-3xl font-extrabold tracking-tight [font-stretch:85%] sm:text-4xl">
               Live in three steps
             </h2>
-            <ol className="mt-10 grid gap-8 md:grid-cols-3">
+            <ol className="relative mt-10 grid gap-8 md:grid-cols-3">
+              {/* The horizon line: draws once from step 1 to step 3 (circle
+                  centers; the grid gap is 2rem, so the third column starts at
+                  two thirds of the width plus 4rem/3). */}
+              <m.span
+                aria-hidden
+                className="absolute left-5 top-5 hidden h-0.5 origin-left bg-text md:block"
+                style={{ width: "calc(66.667% + 1.333rem)" }}
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true, amount: 0.8 }}
+                transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+              />
               {[
                 { t: "Claim your name", d: "Create a free account. Your page lives at timezoftoday.com/u/yourname." },
                 { t: "Pick what you do", d: "Choose your profession and your page gets the sections that fit it." },
                 { t: "Add your work and share", d: "Add tracks, photos, projects or posts, then share one link everywhere." },
               ].map((s, i) => (
-                <li key={s.t} className="flex gap-4">
+                <li key={s.t} className="flex gap-4 md:flex-col">
                   <span
                     aria-hidden
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-highlight font-heading text-lg font-black text-on-highlight"
+                    className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-highlight font-heading text-lg font-black text-on-highlight"
                   >
                     {i + 1}
                   </span>

@@ -379,6 +379,47 @@ h1, h2, h3, h4 {
   }
 }
 
+/* The background environment (AmbientSky): two soft time-of-day glows on one
+   fixed layer, oversized so the drift never shows an edge. Only transform
+   animates. A negative delay starts it mid-drift at first paint. */
+.ambient-sky {
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  will-change: transform;
+  background:
+    radial-gradient(42% 36% at 22% 28%, rgb(var(--amb-a) / var(--amb-alpha)) 0%, rgb(var(--amb-a) / 0) 100%),
+    radial-gradient(38% 34% at 78% 64%, rgb(var(--amb-b) / var(--amb-alpha)) 0%, rgb(var(--amb-b) / 0) 100%);
+  --amb-alpha: 0.2;
+  animation: ambient-drift 96s ease-in-out -30s infinite alternate;
+}
+html[data-mode="dark"] .ambient-sky {
+  --amb-alpha: 0.14;
+}
+@keyframes ambient-drift {
+  from {
+    transform: translate3d(-5%, -3%, 0) rotate(-4deg);
+  }
+  to {
+    transform: translate3d(5%, 4%, 0) rotate(5deg);
+  }
+}
+
+/* DarkModeToggle renders both icons; show the one for the current mode. */
+html[data-mode="dark"] .mode-icon-light,
+html:not([data-mode="dark"]) .mode-icon-dark {
+  display: none;
+}
+
+/* Hidden tab: every looping animation stops. animation-play-state doesn't
+   inherit, so this targets each element and pseudo-element directly. */
+body.paused *,
+body.paused *::before,
+body.paused *::after {
+  animation-play-state: paused !important;
+}
+
 /* Visitors who ask for less motion get instant state changes, no zooms. */
 @media (prefers-reduced-motion: reduce) {
   *,

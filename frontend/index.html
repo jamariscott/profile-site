@@ -5,20 +5,41 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#2B1A3A" />
+    <script>
+      // Runs before first paint, so the prebuilt home page HTML shows in the
+      // visitor's light/dark mode and time-of-day sky from the start.
+      // Mode mirrors DarkModeProvider; the sky table mirrors AmbientSky.tsx.
+      (function () {
+        var d = document.documentElement, mode = "light";
+        try {
+          var saved = localStorage.getItem("tzt_mode");
+          if (saved === "light" || saved === "dark") mode = saved;
+          else if (matchMedia("(prefers-color-scheme: dark)").matches) mode = "dark";
+        } catch (e) {}
+        d.setAttribute("data-mode", mode);
+        var h = new Date().getHours();
+        var sky = h >= 5 && h < 9 ? ["255 199 154", "169 184 255"]
+          : h >= 9 && h < 17 ? ["169 184 255", "233 194 220"]
+          : h >= 17 && h < 21 ? ["255 138 61", "233 194 220"]
+          : ["120 96 190", "169 184 255"];
+        d.style.setProperty("--amb-a", sky[0]);
+        d.style.setProperty("--amb-b", sky[1]);
+      })();
+    </script>
 
-    <title>Timez of Today — Show the world what you do.</title>
+    <title>Timez of Today: Show the world what you do.</title>
     <meta
       name="description"
-      content="Build a public profile for whatever you do — musician, engineer, creator, and more. One page, made for your profession. Claim your page on Timez of Today."
+      content="Build a public profile for whatever you do: musician, engineer, creator and more. One page, made for your profession. Claim your page on Timez of Today."
     />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Timez of Today" />
-    <meta property="og:title" content="Timez of Today — Show the world what you do." />
+    <meta property="og:title" content="Timez of Today: Show the world what you do." />
     <meta
       property="og:description"
-      content="Build a public profile for whatever you do — musician, engineer, creator, and more. One page, made for your profession."
+      content="Build a public profile for whatever you do: musician, engineer, creator and more. One page, made for your profession."
     />
     <meta property="og:url" content="https://www.timezoftoday.com/" />
     <meta property="og:image" content="https://www.timezoftoday.com/og.png" />
@@ -27,10 +48,10 @@
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Timez of Today — Show the world what you do." />
+    <meta name="twitter:title" content="Timez of Today: Show the world what you do." />
     <meta
       name="twitter:description"
-      content="Build a public profile for whatever you do — musician, engineer, creator, and more. One page, made for your profession."
+      content="Build a public profile for whatever you do: musician, engineer, creator and more. One page, made for your profession."
     />
     <meta name="twitter:image" content="https://www.timezoftoday.com/og.png" />
   </head>

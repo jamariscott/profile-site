@@ -18,7 +18,7 @@ import "./index.css";
 // visitors who ask their system for reduced motion (fades still run).
 const loadMotionFeatures = () => import("./lib/motionFeatures").then((m) => m.default);
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const app = (
   <React.StrictMode>
     <MotionConfig reducedMotion="user">
       <LazyMotion features={loadMotionFeatures} strict>
@@ -35,3 +35,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </MotionConfig>
   </React.StrictMode>
 );
+
+const root = document.getElementById("root")!;
+// The home page ships prebuilt in index.html (scripts/prerender.mjs): take
+// over that HTML instead of redrawing it. Every other route gets the empty
+// shell (app.html), and any stray prebuilt HTML there is cleared first.
+if (root.hasChildNodes() && window.location.pathname === "/") {
+  ReactDOM.hydrateRoot(root, app);
+} else {
+  root.replaceChildren();
+  ReactDOM.createRoot(root).render(app);
+}
